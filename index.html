@@ -402,7 +402,7 @@
         <div class="stage-photo" id="stage-photo">
           <img id="tryon-athlete" src="img/model.jpg" alt="Studio model, full body">
           <span class="sim-tag" aria-hidden="true">Simulation</span>
-          <img id="tryon-product" src="img/big-reebok.jpg" alt="Selected gear — drag to place">
+          <img id="tryon-product" src="img/listings/r2.jpg" alt="Selected gear — drag to place">
           <button class="tryon-gen" id="tryon-gen" type="button" hidden aria-label="AI-generated photo of the model wearing the selected gear — press to hide">
             <img id="tryon-gen-img" alt="">
             <span class="gen-tag" aria-hidden="true">AI GENERATED · TAP TO HIDE</span>
@@ -500,21 +500,23 @@
             <div><span class="gl-label">Color</span><b id="gl-color-name">Forest Green / Black</b></div>
             <span class="gl-swatch" id="gl-swatch" aria-hidden="true"></span>
           </div>
-          <div class="gl-divider"></div>
-          <label class="gl-label" for="gl-search-input">Try anything from the shops</label>
-          <div class="gl-search">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-            <input id="gl-search-input" type="search" enterkeyhint="search" maxlength="80" placeholder="Search gear to try on&hellip;" autocomplete="off">
+          <!-- the search dock stays pinned to the panel's bottom while details scroll -->
+          <div class="gl-dock">
+            <label class="gl-label" for="gl-search-input">Try anything from the shops</label>
+            <div class="gl-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input id="gl-search-input" type="search" enterkeyhint="search" maxlength="80" placeholder="Search gear to try on&hellip;" autocomplete="off">
+            </div>
+            <div class="gl-results" id="gl-results" role="group" aria-label="Try-on search results"></div>
+            <div class="gl-ctarow">
+              <button class="gl-cta" id="add-bag-tryon" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7zM9 8a3 3 0 0 1 6 0"/></svg>Add to Bag</button>
+              <button class="gl-share icon-btn" type="button" id="gl-share" aria-label="Share this item">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>
+            </div>
+            <button class="btn-lime btn-wide gl-save" id="tryon-save" type="button">Save this look</button>
+            <p class="gl-note"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 10h3l2 3v4h-5z"/></svg>Free shipping over $75 &middot; purchase completes on the original shop</p>
           </div>
-          <div class="gl-results" id="gl-results" role="group" aria-label="Try-on search results"></div>
-          <div class="gl-ctarow">
-            <button class="gl-cta" id="add-bag-tryon" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7zM9 8a3 3 0 0 1 6 0"/></svg>Add to Bag</button>
-            <button class="gl-share icon-btn" type="button" id="gl-share" aria-label="Share this item">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>
-          </div>
-          <button class="btn-lime btn-wide gl-save" id="tryon-save" type="button">Save this look</button>
-          <p class="gl-note"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 10h3l2 3v4h-5z"/></svg>Free shipping over $75 &middot; purchase completes on the original shop</p>
         </div>
       </div>
     </section>

@@ -573,6 +573,17 @@ body.tryon-mode .topbar { display: none; }
 .gl-share svg { width: 19px; height: 19px; }
 .gl-share:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 
+/* the search dock rides the bottom edge of the scrolling right panel */
+.gl-dock {
+  position: sticky; bottom: -22px;
+  margin: 16px -22px -22px;
+  padding: 4px 22px 22px;
+  background: rgba(17, 22, 26, 0.97);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
+}
+
 /* compare modal */
 .compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
 .compare-card { display: flex; flex-direction: column; gap: 8px; }
@@ -613,7 +624,7 @@ body.tryon-mode .topbar { display: none; }
   .gt-tag { display: none; }
   .gt-seg { order: 3; width: 100%; justify-content: center; }
   .gt-tab { flex: 1; text-align: center; padding: 10px 8px; }
-  .full-look { right: 14px; bottom: auto; top: calc(52vh - 250px); }
+  .full-look { right: 12px; bottom: 12px; top: auto; width: 112px; }
 }
 .glass-left {
   position: absolute; left: 22px; top: 22px; bottom: 22px;

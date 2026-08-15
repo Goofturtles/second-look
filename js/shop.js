@@ -791,7 +791,9 @@
     const base = { feet: 28, head: 20, legs: 40, torso: 44 }[kind];
     const sizeIdx = { XS: -1, S: 0, M: 1, L: 2, XL: 3 }[state.size] ?? 1;
     const fitNudge = state.fit === 'Relaxed' ? 3 : state.fit === 'Fitted' ? -3 : 0;
-    const width = base + sizeIdx * 5 + fitNudge;
+    // a taller athlete makes the same garment read smaller on the body
+    const hNudge = (1 - Math.max(0, HEIGHTS.indexOf(state.height))) * 3;
+    const width = base + sizeIdx * 5 + fitNudge + hNudge;
     const g = $('#tryon-product');
     g.style.left = spot[0] + '%';
     g.style.top = spot[1] + '%';
@@ -800,7 +802,7 @@
     if (slider) slider.value = width; // keep the manual slider in sync
   }
   let applySeq = 0;
-  async function applyGarment(p) {
+  async function applyGarment(p, reveal = true) {
     const g = $('#tryon-product');
     const seq = ++applySeq;
     const key = state.tryonProduct;
@@ -812,7 +814,7 @@
       g.src = cached;
       placeGarment(p);
       updateTryonCaption();
-      generateVton(p);
+      generateVton(p, reveal);
       return;
     }
     g.classList.remove('cutout', 'blend');
@@ -834,7 +836,7 @@
       g.classList.add('blend'); // free fallback: light backgrounds melt into the scene
     }
     updateTryonCaption();
-    generateVton(p);
+    generateVton(p, reveal);
   }
   function updateTryonCaption() {
     const p = PRODUCTS[state.tryonProduct];
@@ -845,7 +847,7 @@
   let vtonSeq = 0;
   const vtonUrls = new Map(); // athlete|garment -> object URL of the generated photo
   const vtonDismissed = new Set(); // keys the user tapped away — respect that choice
-  async function generateVton(p) {
+  async function generateVton(p, reveal = true) {
     const gen = $('#tryon-gen');
     if (!gen) return;
     const seq = ++vtonSeq;
@@ -867,7 +869,15 @@
     };
     const hush = () => { if (status && seq === vtonSeq) status.hidden = true; };
     const cached = vtonUrls.get(key);
-    if (cached) { hush(); $('#tryon-gen-img').src = cached; gen.hidden = false; return; }
+    if (cached) {
+      hush();
+      $('#tryon-gen-img').src = cached;
+      // after a size/height/fit tweak the user is looking at the OVERLAY change —
+      // don't slam the cached photo back over it; the FULL LOOK card keeps it a tap away
+      if (reveal) gen.hidden = false;
+      renderFullLook();
+      return;
+    }
     say('AI is dressing the model… about 30 seconds');
     for (let attempt = 0; attempt < 4; attempt++) {
       let res = null;
@@ -892,7 +902,7 @@
       vtonUrls.set(key, url);
       hush();
       $('#tryon-gen-img').src = url;
-      gen.hidden = false;
+      if (reveal) gen.hidden = false;
       renderFullLook(); // the floating card gets the fresh photo
       return;
     }
@@ -925,7 +935,10 @@
       <button type="button" data-fldot="${esc(id)}" class="${id === state.tryonProduct ? 'on' : ''}"
         aria-label="Switch to ${esc((PRODUCTS[id] || {}).name || 'look').replace(/\n/g, ' ')}"></button>`).join('');
   }
-  function updateTryon() {
+  function updateTryon(reveal = true) {
+    // a fit/size/height tweak must be VISIBLE: drop to the overlay so the garment
+    // change shows instead of being covered by the cached AI photo
+    if (!reveal) $('#tryon-gen').hidden = true;
     // every athlete has their OWN full-body model photo — switching is always visible
     const stageModel = $('#tryon-athlete');
     stageModel.src = MODEL_PHOTOS[state.athlete - 1] || MODEL_PHOTOS[1];
@@ -995,7 +1008,7 @@
     else triedHistory = [state.tryonProduct, ...triedHistory.filter((id) => id !== state.tryonProduct)];
     triedHistory = triedHistory.slice(0, 5);
     renderFullLook();
-    applyGarment(p);
+    applyGarment(p, reveal);
   }
 
   /* draggable + resizable garment on the model */
@@ -1044,17 +1057,17 @@
     state.height = HEIGHTS[Number(e.target.value)] || HEIGHTS[2];
     const sel = $('#sel-height');
     if (sel) sel.firstChild.textContent = state.height; // keep the home rail in step
-    updateTryon();
+    updateTryon(false); // show the overlay so the change is visible
   });
   $$('#gl-sizes .gl-chip').forEach((c) => c.addEventListener('click', () => {
     state.size = c.textContent.trim();
     const sel = $('#sel-size');
     if (sel) sel.firstChild.textContent = state.size;
-    updateTryon();
+    updateTryon(false);
   }));
   $$('#gl-fits .gl-chip').forEach((c) => c.addEventListener('click', () => {
     state.fit = c.dataset.fit || c.textContent.trim();
-    updateTryon();
+    updateTryon(false);
   }));
   /* try-on header */
   $('#gt-details') && $('#gt-details').addEventListener('click', () => show('product', { product: state.tryonProduct }));
