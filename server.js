@@ -151,6 +151,91 @@ async function searchEbay(q) {
   })).filter((x) => x.title && x.price > 0 && x.img.startsWith('https://') && x.url.startsWith('https://'));
 }
 
+/* ---------- generative try-on: the free Kolors space dresses the model ---------- */
+const VTON_SPACE = 'https://kwai-kolors-kolors-virtual-try-on.hf.space';
+const VTON_HOSTS = ['di2ponv0v5otw.cloudfront.net', 'images.sidelineswap.com', 'edge.images.sidelineswap.com', 'cdn.shopify.com'];
+const vtonCache = new Map(); // person|garment -> jpeg Buffer
+let vtonBusy = false;
+
+function requestRaw(u, opts) {
+  opts = opts || {};
+  return new Promise((resolve, reject) => {
+    const req = https.request(u, { method: opts.method || 'GET', headers: opts.headers }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve({ status: res.statusCode, buffer: Buffer.concat(chunks) }));
+    });
+    req.setTimeout(opts.timeout || 30000, () => req.destroy(new Error('timeout')));
+    req.on('error', reject);
+    if (opts.body) req.write(opts.body);
+    req.end();
+  });
+}
+async function gradioUpload(buf, name) {
+  const boundary = '----slk' + Math.random().toString(36).slice(2);
+  const body = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="files"; filename="${name}"\r\nContent-Type: image/jpeg\r\n\r\n`),
+    buf,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+  const r = await requestRaw(VTON_SPACE + '/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'multipart/form-data; boundary=' + boundary, 'Content-Length': body.length },
+    body, timeout: 60000,
+  });
+  if (r.status !== 200) throw new Error('upload ' + r.status);
+  return JSON.parse(r.buffer.toString('utf8'))[0];
+}
+function gradioFile(p, name) {
+  return { path: p, url: VTON_SPACE + '/file=' + p, orig_name: name, mime_type: 'image/jpeg', meta: { _type: 'gradio.FileData' } };
+}
+function vtonGenerate(personBuf, garmentBuf) {
+  return (async () => {
+    const pPath = await gradioUpload(personBuf, 'person.jpg');
+    const gPath = await gradioUpload(garmentBuf, 'garment.jpg');
+    const session = Math.random().toString(36).slice(2, 13);
+    const join = await requestRaw(VTON_SPACE + '/queue/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        data: [gradioFile(pPath, 'person.jpg'), gradioFile(gPath, 'garment.jpg'), 0, true],
+        event_data: null, fn_index: 2, trigger_id: 26, session_hash: session,
+      }),
+      timeout: 30000,
+    });
+    if (join.status !== 200) throw new Error('queue join ' + join.status);
+    const outUrl = await new Promise((resolve, reject) => {
+      const req = https.get(VTON_SPACE + '/queue/data?session_hash=' + session, { headers: { Accept: 'text/event-stream' } }, (res) => {
+        let acc = '';
+        res.on('data', (c) => {
+          acc += c.toString('utf8');
+          let i;
+          while ((i = acc.indexOf('\n\n')) > -1) {
+            const frame = acc.slice(0, i); acc = acc.slice(i + 2);
+            const line = frame.split('\n').find((l) => l.startsWith('data:'));
+            if (!line) continue;
+            let ev; try { ev = JSON.parse(line.slice(5)); } catch (e) { continue; }
+            if (ev.msg === 'process_completed') {
+              req.destroy();
+              if (ev.success === false) return reject(new Error('space refused (quota or error)'));
+              const out = ev.output && ev.output.data && ev.output.data[0];
+              const u2 = out && (out.url || (out.path && VTON_SPACE + '/file=' + out.path));
+              return u2 ? resolve(u2) : reject(new Error('no output image'));
+            }
+            if (ev.msg === 'close_stream') { req.destroy(); reject(new Error('stream closed early')); }
+          }
+        });
+        res.on('end', () => reject(new Error('stream ended')));
+      });
+      req.setTimeout(150000, () => { req.destroy(); reject(new Error('generation timeout')); });
+      req.on('error', reject);
+    });
+    const img = await requestRaw(outUrl, { timeout: 60000 });
+    if (img.status !== 200) throw new Error('result fetch ' + img.status);
+    return img.buffer;
+  })();
+}
+
 function computeStats(items) {
   const prices = items.map((i) => i.price).sort((a, b) => a - b);
   const perStore = {};
@@ -235,6 +320,46 @@ const server = http.createServer(async (req, res) => {
       } catch (e) {
         res.writeHead(502, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ error: String(e.message || e).slice(0, 120) }));
+      }
+    }
+    if (u.pathname === '/api/vton') {
+      const g = (u.searchParams.get('g') || '').slice(0, 500);
+      const person = ['3', '4'].includes(u.searchParams.get('p')) ? 'media/athlete-f.jpg' : 'img/model.jpg';
+      const key = person + '|' + g;
+      const hit = vtonCache.get(key);
+      if (hit) { res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-cache' }); return res.end(hit); }
+      // resolve the garment source: our own file, or a whitelisted shop CDN
+      let garmentBuf = null;
+      if (/^https:\/\//.test(g)) {
+        let host = ''; try { host = new URL(g).hostname; } catch (e) {}
+        if (!VTON_HOSTS.includes(host)) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end('{"error":"unsupported image host"}'); }
+      } else {
+        const local = path.join(ROOT, g);
+        if (!local.startsWith(ROOT) || g.includes('..') || !fs.existsSync(local)) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end('{"error":"bad garment"}'); }
+      }
+      if (vtonBusy) { res.writeHead(503, { 'Content-Type': 'application/json', 'Retry-After': '10' }); return res.end('{"error":"busy"}'); }
+      if (rateLimited(req.socket.remoteAddress || '')) { res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '30' }); return res.end('{"error":"slow down"}'); }
+      vtonBusy = true;
+      try {
+        if (/^https:\/\//.test(g)) {
+          const r = await requestRaw(g, { timeout: 30000, headers: { 'User-Agent': UA } });
+          if (r.status !== 200) throw new Error('garment fetch ' + r.status);
+          garmentBuf = r.buffer;
+        } else {
+          garmentBuf = fs.readFileSync(path.join(ROOT, g));
+        }
+        const personBuf = fs.readFileSync(path.join(ROOT, person));
+        const out = await vtonGenerate(personBuf, garmentBuf);
+        vtonCache.set(key, out);
+        if (vtonCache.size > 30) vtonCache.delete(vtonCache.keys().next().value);
+        const type = out.slice(0, 4).toString('ascii') === 'RIFF' ? 'image/webp' : 'image/jpeg';
+        res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
+        return res.end(out);
+      } catch (e) {
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: String(e.message || e).slice(0, 120) }));
+      } finally {
+        vtonBusy = false;
       }
     }
     // static files: gzip text, cache aggressively, answer revalidations with 304

@@ -439,6 +439,25 @@ button.d-link:hover { text-decoration: underline; }
   box-shadow: none;
 }
 
+/* the generated try-on photo covers the stage when ready; tap to peek the overlay */
+.tryon-gen[hidden] { display: none; }
+.tryon-gen {
+  position: absolute; inset: 0; z-index: 3;
+  display: block;
+  padding: 0; border: none; cursor: pointer;
+  background: #060d13;
+  animation: gen-in 0.5s ease;
+}
+.tryon-gen img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gen-tag {
+  position: absolute; top: 14px; left: 14px;
+  background: var(--lime); color: var(--lime-ink);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 6px 12px; border-radius: 99px;
+}
+@keyframes gen-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tryon-gen { animation: none; } }
+
 /* search-in-flight skeleton cards — shimmer in the grid until real results land */
 .skel-card {
   border-radius: 18px;

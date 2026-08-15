@@ -757,6 +757,7 @@
       g.src = cached;
       placeGarment(p);
       updateTryonCaption();
+      generateVton(p);
       return;
     }
     g.classList.remove('cutout', 'blend');
@@ -778,11 +779,47 @@
       g.classList.add('blend'); // free fallback: light backgrounds melt into the scene
     }
     updateTryonCaption();
+    generateVton(p);
   }
   function updateTryonCaption() {
     const p = PRODUCTS[state.tryonProduct];
     $('#tryon-caption').textContent = `Athlete ${state.athlete} · ${p.name.replace('\n', ' ')} · ${state.size} · ${state.fit}`;
   }
+  /* generative try-on: the server asks a free hosted model to dress the model.
+     Fires automatically after the cutout lands; the cutout stays if it can't. */
+  let vtonSeq = 0;
+  const vtonUrls = new Map(); // athlete|garment -> object URL of the generated photo
+  async function generateVton(p) {
+    const gen = $('#tryon-gen');
+    if (!gen) return;
+    const seq = ++vtonSeq;
+    gen.hidden = true; // a new pick always starts on the overlay
+    const garment = p.big || p.img;
+    const key = state.athlete + '|' + garment;
+    const cached = vtonUrls.get(key);
+    if (cached) { $('#tryon-gen-img').src = cached; gen.hidden = false; return; }
+    for (let attempt = 0; attempt < 4; attempt++) {
+      let res = null;
+      try {
+        res = await fetch('/api/vton?p=' + state.athlete + '&g=' + encodeURIComponent(garment));
+      } catch (e) { return; } // static hosting or offline — the cutout is the experience
+      if (seq !== vtonSeq) return;
+      if (res.status === 503 || res.status === 429) {
+        await new Promise((r) => setTimeout(r, 12000));
+        if (seq !== vtonSeq) return;
+        continue;
+      }
+      if (!res.ok) return; // space down or out of free quota — stay on the cutout, quietly
+      const blob = await res.blob();
+      if (seq !== vtonSeq) return;
+      const url = URL.createObjectURL(blob);
+      vtonUrls.set(key, url);
+      $('#tryon-gen-img').src = url;
+      gen.hidden = false;
+      return;
+    }
+  }
+  $('#tryon-gen') && $('#tryon-gen').addEventListener('click', () => { $('#tryon-gen').hidden = true; });
   function updateTryon() {
     const av = $('#tryon-avatar'); if (!av) return;
     av.src = `img/av${state.athlete}.jpg`;
