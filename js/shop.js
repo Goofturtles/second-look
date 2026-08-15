@@ -108,6 +108,7 @@
   let live = null;          // { q, stats, sources, items }
   let liveSeq = 0;          // newest search wins; superseded responses are dropped
   let bakedData = null;     // parsed data/live.json, fetched once
+  let liveMiss = '';        // why live is null: 'unreachable' | 'nomatch'
   function statsFor(items) {
     const prices = items.map((i) => i.price).sort((a, b) => a - b);
     const perStore = {};
@@ -167,7 +168,8 @@
       registerListings(payload.items);
       live = payload;
     } else {
-      live = null; // offline or nothing matched — snapshot stays, honestly labeled
+      live = null; // snapshot stays, honestly labeled with the true reason
+      liveMiss = (bakedData && bakedData.items && bakedData.items.length) ? 'nomatch' : 'unreachable';
     }
     renderResults();
   }
@@ -204,7 +206,9 @@
       $('#results-count').textContent =
         `${list.length} of ${s.total} ${live.baked ? 'real' : 'live'} listings · $${s.min}–$${s.max}, median $${s.median} · ${stores}${when}`;
     } else if (snapshotFallback) {
-      $('#results-count').textContent = `live shops unreachable — showing the snapshot of ${REAL.store}, ${REAL.capturedAt}`;
+      $('#results-count').textContent = liveMiss === 'nomatch'
+        ? `no matches in the refreshed listings — showing the snapshot of ${REAL.store}, ${REAL.capturedAt}`
+        : `live shops unreachable — showing the snapshot of ${REAL.store}, ${REAL.capturedAt}`;
     } else {
       $('#results-count').textContent = `${list.length} ${list.length === 1 ? 'item' : 'items'} · snapshot of ${REAL.store}, ${REAL.capturedAt}`;
     }
