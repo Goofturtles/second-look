@@ -479,11 +479,11 @@ button.d-link:hover { text-decoration: underline; }
 @keyframes skel-shimmer { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .skel-card { animation: none; } }
 
-/* hero slides all use the same treatment: clean dramatic center-crops with no
-   baked-in text — cover can crop them at any width and it always reads as design.
-   Slide 1's photo is text-free now (graffiti cropped out at the source); a slight
-   upward bias keeps the athlete's face in frame in wide boxes. */
-.hero-slide:first-child .hero-img { object-position: center 26%; }
+/* hero slides all use the same treatment: clean dramatic crops with no baked-in
+   text — cover can crop them at any width and it always reads as design. Slide 1
+   keeps its full wide frame (graffiti painted out at the source, so the whole
+   athlete stays in view); narrow crops center on him, not the empty fence. */
+.hero-slide:first-child .hero-img { object-position: 30% 40%; }
 
 /* Shop-by-sport tiles */
 .shop-tiles {
