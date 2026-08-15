@@ -915,7 +915,8 @@
     if (gen.dataset.key) vtonDismissed.add(gen.dataset.key);
   });
   const HEIGHTS = ["5'6\" (168 cm)", "5'9\" (175 cm)", "6'0\" (183 cm)", "6'3\" (191 cm)"];
-  const MODEL_PHOTOS = ['img/model1.jpg', 'img/model.jpg', 'img/model3.jpg', 'img/model4.jpg'];
+  // the user's own model shoot: Guy 1-3, Girl 1-3 — one full-body photo per athlete
+  const MODEL_PHOTOS = ['img/model1.jpg', 'img/model2.jpg', 'img/model3.jpg', 'img/model4.jpg', 'img/model5.jpg', 'img/model6.jpg'];
   const COLOR_WORDS = { green: '#1d5c3e', black: '#15181c', white: '#e8e8e4', red: '#b8302f', blue: '#2f5db8', navy: '#1d2f52', grey: '#7a8288', gray: '#7a8288', yellow: '#d8c22f', pink: '#c96f9a', purple: '#6a4a9c', orange: '#c9722f', brown: '#6d4c33', teal: '#2f8a80', burgundy: '#6b2231' };
   function colorsFrom(name) {
     const n = (name || '').toLowerCase();
@@ -1081,7 +1082,8 @@
     $('#th-bag').setAttribute('aria-expanded', String(!$('#bag-drawer').hidden));
   });
   const athStep = (d) => {
-    state.athlete = ((state.athlete - 1 + d + 4) % 4) + 1;
+    const n = MODEL_PHOTOS.length;
+    state.athlete = ((state.athlete - 1 + d + n) % n) + 1;
     syncAthletes();
     updateTryon();
   };
