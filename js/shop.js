@@ -310,10 +310,11 @@
   }
   function renderLooks() {
     // full-resolution photography — the board crops upscale badly at this size
-    const looks = [['img/hero-athlete.jpg', 'Court classic'], ['media/card-rider.jpg', 'City layers'], ['img/look-sneaker.jpg', 'Daily miles'], ['media/card-athlete.jpg', 'Night session']];
-    $('#looks-grid').innerHTML = looks.map(([img, cap], i) => `
+    // the hero photo is a wide frame with the athlete at ~30% — bias its card crop to him
+    const looks = [['img/hero-athlete.jpg?v=4', 'Court classic', '30% 40%'], ['media/card-rider.jpg', 'City layers', ''], ['img/look-sneaker.jpg', 'Daily miles', ''], ['media/card-athlete.jpg', 'Night session', '']];
+    $('#looks-grid').innerHTML = looks.map(([img, cap, pos], i) => `
       <div class="look-card">
-        <img src="${esc(img)}" alt="${esc(cap)} look" loading="lazy">
+        <img src="${esc(img)}" alt="${esc(cap)} look" loading="lazy"${pos ? ` style="object-position:${esc(pos)}"` : ''}>
         <div class="look-bar"><span>${esc(cap)}</span><button class="heart" type="button" data-save="${esc(PICK_IDS[i])}" aria-pressed="${state.saved.has(PICK_IDS[i])}" aria-label="Save ${esc(cap)} look"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"/></svg></button></div>
       </div>`).join('');
   }
