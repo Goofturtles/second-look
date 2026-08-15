@@ -77,7 +77,7 @@
         aria-label="${esc(p.name.replace(/\n/g, ' '))}, ${p.size ? `size ${esc(p.size)}, ` : ''}${money(p.now)}${p.was ? `, was ${money(p.was)}` : ''}${p.off ? ', ' + esc(p.off) : ''}">
         <span class="card-media">${tall
           ? `<img src="${esc(p.big || p.img)}" alt="" loading="lazy">`
-          : `<picture><source media="(max-width: 640px)" srcset="${esc(p.big || p.img)}"><img src="${esc(p.img)}" alt="" loading="lazy"></picture>`}
+          : `<picture><source media="(max-width: 640px)" srcset="${esc(p.big || p.img)}"><img src="${esc(p.img)}"${p.big && p.big !== p.img ? ` srcset="${esc(p.img)} 1x, ${esc(p.big)} 2x"` : ''} alt="" loading="lazy"></picture>`}
         </span>
         <span class="card-body">
           <span class="card-name">${nameHtml(p.name)}</span>
@@ -311,7 +311,7 @@
   function renderLooks() {
     // full-resolution photography — the board crops upscale badly at this size
     // the hero photo is a wide frame with the athlete at ~30% — bias its card crop to him
-    const looks = [['img/hero-athlete.jpg?v=4', 'Court classic', '30% 40%'], ['media/card-rider.jpg', 'City layers', ''], ['img/look-sneaker.jpg', 'Daily miles', ''], ['media/card-athlete.jpg', 'Night session', '']];
+    const looks = [['img/hero-athlete.jpg?v=5', 'Court classic', '30% 40%'], ['media/card-rider.jpg', 'City layers', ''], ['img/look-sneaker.jpg', 'Daily miles', ''], ['media/card-athlete.jpg', 'Night session', '']];
     $('#looks-grid').innerHTML = looks.map(([img, cap, pos], i) => `
       <div class="look-card">
         <img src="${esc(img)}" alt="${esc(cap)} look" loading="lazy"${pos ? ` style="object-position:${esc(pos)}"` : ''}>
@@ -806,28 +806,45 @@
     const key = state.athlete + '|' + garment;
     if (vtonDismissed.has(key)) return;
     gen.dataset.key = key;
+    const status = $('#gen-status');
+    const say = (msg, done) => {
+      if (!status || seq !== vtonSeq) return;
+      status.textContent = msg;
+      status.classList.toggle('done', !!done);
+      status.hidden = false;
+    };
+    const hush = () => { if (status && seq === vtonSeq) status.hidden = true; };
     const cached = vtonUrls.get(key);
-    if (cached) { $('#tryon-gen-img').src = cached; gen.hidden = false; return; }
+    if (cached) { hush(); $('#tryon-gen-img').src = cached; gen.hidden = false; return; }
+    say('AI is dressing the model… about 30 seconds');
     for (let attempt = 0; attempt < 4; attempt++) {
       let res = null;
       try {
         res = await fetch('/api/vton?p=' + state.athlete + '&g=' + encodeURIComponent(garment));
-      } catch (e) { return; } // static hosting or offline — the cutout is the experience
+      } catch (e) { hush(); return; } // static hosting or offline — the cutout is the experience
       if (seq !== vtonSeq) return;
       if (res.status === 503 || res.status === 429) {
+        say('AI is finishing another look — yours is next…');
         await new Promise((r) => setTimeout(r, 12000));
         if (seq !== vtonSeq) return;
         continue;
       }
-      if (!res.ok) return; // space down or out of free quota — stay on the cutout, quietly
+      if (!res.ok) {
+        say('AI photo unavailable right now — overlay view instead', true);
+        setTimeout(hush, 4000);
+        return;
+      }
       const blob = await res.blob();
       if (seq !== vtonSeq) return;
       const url = URL.createObjectURL(blob);
       vtonUrls.set(key, url);
+      hush();
       $('#tryon-gen-img').src = url;
       gen.hidden = false;
       return;
     }
+    say('AI is busy — the overlay view is ready to use', true);
+    setTimeout(hush, 4000);
   }
   $('#tryon-gen') && $('#tryon-gen').addEventListener('click', () => {
     const gen = $('#tryon-gen');

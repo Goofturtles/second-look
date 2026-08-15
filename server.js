@@ -413,6 +413,19 @@ if (require.main === module) {
       (p) => console.log('prewarmed "nike windrunner": ' + p.stats.total + ' listings'),
       (e) => console.log('prewarm failed: ' + (e && e.message)),
     );
+    // prewarm the default try-on look so the first demo click is instant
+    (async () => {
+      try {
+        vtonBusy = true;
+        const out = await vtonGenerate(fs.readFileSync(path.join(ROOT, 'img/model.jpg')), fs.readFileSync(path.join(ROOT, 'img/big-reebok.jpg')));
+        vtonCache.set('img/model.jpg|img/big-reebok.jpg', out);
+        console.log('prewarmed default try-on look (' + out.length + 'b)');
+      } catch (e) {
+        console.log('try-on prewarm skipped: ' + (e && e.message));
+      } finally {
+        vtonBusy = false;
+      }
+    })();
   });
 }
 

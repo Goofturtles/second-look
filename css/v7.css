@@ -468,6 +468,29 @@ button.d-link:hover { text-decoration: underline; }
 @keyframes gen-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .tryon-gen { animation: none; } }
 
+/* live status while the AI dresses the model — the wait must never look dead */
+.gen-status[hidden] { display: none; }
+.gen-status {
+  position: absolute; left: 14px; top: 14px; z-index: 4;
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(9, 19, 27, 0.92);
+  border: 1px solid rgba(211, 234, 44, 0.5);
+  color: var(--text, #F2F5F7);
+  font-size: 12px; font-weight: 600;
+  padding: 8px 14px; border-radius: 99px;
+}
+.gen-status::before {
+  content: '';
+  width: 12px; height: 12px;
+  border: 2px solid var(--lime);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: gen-spin 0.8s linear infinite;
+}
+.gen-status.done::before { display: none; }
+@keyframes gen-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .gen-status::before { animation: none; border-top-color: var(--lime); } }
+
 /* search-in-flight skeleton cards — shimmer in the grid until real results land */
 .skel-card {
   border-radius: 18px;
