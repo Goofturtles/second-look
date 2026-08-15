@@ -1,0 +1,8 @@
+# One-click Render deployment for TRUE live search (any query hits the shops
+# in real time). Free tier. Connect this repo at https://render.com → Blueprints.
+services:
+  - type: web
+    name: second-look
+    runtime: node
+    plan: free
+    startCommand: node server.js

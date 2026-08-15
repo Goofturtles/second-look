@@ -1,0 +1,208 @@
+/* SECOND LOOK dev server — static site + live shop aggregation.
+   Zero dependencies. Run: node server.js  (port 3488)
+
+   GET /api/search?q=...  →  { q, fetchedAt, stats, sources, items[] }
+   Live sources: Poshmark (SSR-embedded JSON), SidelineSwap (public API),
+   and eBay Browse API when EBAY_OAUTH_TOKEN is set in the environment. */
+
+'use strict';
+const http = require('http');
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = __dirname;
+const PORT = Number(process.env.PORT) || 3488;
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
+
+const MIME = {
+  '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript',
+  '.json': 'application/json', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+  '.png': 'image/png', '.svg': 'image/svg+xml', '.mp4': 'video/mp4', '.webp': 'image/webp',
+  '.ico': 'image/x-icon', '.woff2': 'font/woff2',
+};
+
+function fetchUrl(u, headers, redirects) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(u, { headers: { 'User-Agent': UA, 'Accept-Language': 'en-US', ...headers } }, (res) => {
+      if (res.statusCode >= 301 && res.statusCode <= 308 && res.headers.location && (redirects || 0) < 3) {
+        res.resume();
+        return resolve(fetchUrl(new URL(res.headers.location, u).href, headers, (redirects || 0) + 1));
+      }
+      if (res.statusCode !== 200) { res.resume(); return reject(new Error('HTTP ' + res.statusCode)); }
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    req.setTimeout(12000, () => req.destroy(new Error('timeout')));
+    req.on('error', reject);
+  });
+}
+
+/* ---------- Poshmark: listings ride inside the SSR page's __INITIAL_STATE__ ---------- */
+async function searchPoshmark(q) {
+  const html = await fetchUrl('https://poshmark.com/search?query=' + encodeURIComponent(q) + '&type=listings');
+  const i = html.indexOf('__INITIAL_STATE__');
+  if (i < 0) throw new Error('no state');
+  const start = html.indexOf('{', i);
+  const ends = [html.indexOf(';(function', start), html.indexOf('</script>', start)].filter((x) => x > -1);
+  const st = JSON.parse(html.slice(start, Math.min(...ends)).trim());
+  const data = (((st.$_search || {}).gridData || {}).data) || [];
+  return data.map((d) => ({
+    id: 'pm-' + d.id,
+    title: String(d.title || '').slice(0, 90),
+    price: Number(d.price) || 0,
+    was: Number(d.original_price) > Number(d.price) ? Math.round(Number(d.original_price)) : 0,
+    size: (d.size_obj && d.size_obj.display) || '',
+    brand: d.brand || '',
+    dept: (d.department && d.department.display) || '',
+    cond: d.condition === 'nwt' ? 'New with tags' : 'Pre-owned',
+    img: d.picture_url || '',
+    big: (d.cover_shot && d.cover_shot.url_large) || d.picture_url || '',
+    likes: Number(d.like_count) || 0,
+    seller: d.creator_display_handle || d.creator_username || '',
+    sellerAv: d.creator_picture_url || '',
+    url: 'https://poshmark.com/listing/' + d.id,
+    store: 'Poshmark',
+  })).filter((x) => x.title && x.price > 0 && x.img.startsWith('https://'));
+}
+
+/* ---------- SidelineSwap: clean public JSON API ---------- */
+async function searchSideline(q) {
+  const body = await fetchUrl('https://api.sidelineswap.com/v1/facet_items?q=' + encodeURIComponent(q) + '&page=1&per_page=48&state[]=available');
+  const j = JSON.parse(body);
+  return (j.data || []).map((d) => {
+    const price = Math.round(Number(d.price) || 0);
+    const retail = Math.round(Number(d.price_retail) || 0);
+    return {
+      id: 'ss-' + d.id,
+      title: String(d.name || '').slice(0, 90),
+      price,
+      was: retail > price ? retail : 0,
+      size: '',
+      brand: '',
+      dept: '',
+      cond: (d.condition_detail && d.condition_detail.name) === 'New' ? 'New with tags' : 'Pre-owned',
+      img: (d.primary_image && (d.primary_image.small_url || d.primary_image.thumb_url)) || '',
+      big: (d.primary_image && (d.primary_image.large_url || d.primary_image.small_url)) || '',
+      likes: Number(d.favoriters_count) || 0,
+      seller: (d.seller && d.seller.username) || '',
+      sellerAv: '',
+      url: d.url || '',
+      store: 'SidelineSwap',
+    };
+  }).filter((x) => x.title && x.price > 0 && x.img.startsWith('https://') && x.url.startsWith('https://'));
+}
+
+/* ---------- eBay Browse API — activates when a token is provided ---------- */
+async function searchEbay(q) {
+  const token = process.env.EBAY_OAUTH_TOKEN;
+  if (!token) return [];
+  const body = await fetchUrl('https://api.ebay.com/buy/browse/v1/item_summary/search?q=' + encodeURIComponent(q) + '&limit=48',
+    { Authorization: 'Bearer ' + token });
+  const j = JSON.parse(body);
+  return (j.itemSummaries || []).map((d) => ({
+    id: 'eb-' + d.itemId,
+    title: String(d.title || '').slice(0, 90),
+    price: Math.round(Number(d.price && d.price.value) || 0),
+    was: 0,
+    size: '',
+    brand: '',
+    dept: '',
+    cond: d.condition === 'New' ? 'New with tags' : 'Pre-owned',
+    img: (d.image && d.image.imageUrl) || (d.thumbnailImages && d.thumbnailImages[0] && d.thumbnailImages[0].imageUrl) || '',
+    big: (d.image && d.image.imageUrl) || '',
+    likes: 0,
+    seller: (d.seller && d.seller.username) || '',
+    sellerAv: '',
+    url: d.itemWebUrl || '',
+    store: 'eBay',
+  })).filter((x) => x.title && x.price > 0 && x.img.startsWith('https://') && x.url.startsWith('https://'));
+}
+
+function computeStats(items) {
+  const prices = items.map((i) => i.price).sort((a, b) => a - b);
+  const perStore = {};
+  for (const i of items) perStore[i.store] = (perStore[i.store] || 0) + 1;
+  const median = prices.length ? prices[Math.floor(prices.length / 2)] : 0;
+  const avg = prices.length ? Math.round(prices.reduce((s, p) => s + p, 0) / prices.length) : 0;
+  return { total: items.length, min: prices[0] || 0, max: prices[prices.length - 1] || 0, median, avg, perStore };
+}
+
+const cache = new Map(); // q -> { t, payload }
+const TTL = 15 * 60 * 1000;
+
+async function apiSearch(q) {
+  const key = q.toLowerCase().trim();
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.t < TTL) return hit.payload;
+  const tasks = [
+    ['Poshmark', searchPoshmark(q)],
+    ['SidelineSwap', searchSideline(q)],
+    ['eBay', searchEbay(q)],
+  ];
+  const settled = await Promise.allSettled(tasks.map(([, p]) => p));
+  const items = [];
+  const sources = [];
+  settled.forEach((r, i) => {
+    const store = tasks[i][0];
+    if (store === 'eBay' && !process.env.EBAY_OAUTH_TOKEN) return; // not configured — omit
+    if (r.status === 'fulfilled') {
+      items.push(...r.value);
+      sources.push({ store, ok: true, count: r.value.length });
+    } else {
+      sources.push({ store, ok: false, error: String(r.reason && r.reason.message || r.reason).slice(0, 80) });
+    }
+  });
+  const payload = { q, fetchedAt: new Date().toISOString(), stats: computeStats(items), sources, items };
+  if (items.length) {
+    cache.set(key, { t: Date.now(), payload });
+    if (cache.size > 50) cache.delete(cache.keys().next().value); // drop the oldest entry
+  }
+  return payload;
+}
+
+const server = http.createServer(async (req, res) => {
+  try {
+    const u = new URL(req.url, 'http://localhost');
+    if (u.pathname === '/api/search') {
+      const q = (u.searchParams.get('q') || '').slice(0, 80).trim();
+      if (!q) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end('{"error":"q required"}'); }
+      try {
+        const payload = await apiSearch(q);
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        return res.end(JSON.stringify(payload));
+      } catch (e) {
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: String(e.message || e).slice(0, 120) }));
+      }
+    }
+    // static files
+    let p = decodeURIComponent(u.pathname);
+    if (p === '/') p = '/index.html';
+    const file = path.join(ROOT, p);
+    if (!file.startsWith(ROOT) || p.includes('..') || p.includes('\0')) { res.writeHead(403); return res.end(); }
+    fs.readFile(file, (err, buf) => {
+      if (err) { res.writeHead(404); return res.end('not found'); }
+      res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream' });
+      res.end(buf);
+    });
+  } catch (e) {
+    // a malformed URL (bad percent-encoding etc.) must never take the process down
+    try { res.writeHead(400); res.end('bad request'); } catch (e2) { /* response already gone */ }
+  }
+});
+
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log('SECOND LOOK server on http://localhost:' + PORT +
+      (process.env.EBAY_OAUTH_TOKEN ? ' (eBay live)' : ' (eBay off — set EBAY_OAUTH_TOKEN to enable)'));
+    // prewarm the default query so first paint gets live data instantly
+    apiSearch('nike windrunner').then(
+      (p) => console.log('prewarmed "nike windrunner": ' + p.stats.total + ' listings'),
+      (e) => console.log('prewarm failed: ' + (e && e.message)),
+    );
+  });
+}
+
+module.exports = { apiSearch }; // used by scripts/build-live.js for the static deployment

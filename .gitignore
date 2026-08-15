@@ -1,0 +1,4 @@
+ref/
+v5-backup/
+*.log
+.playwright-mcp/
