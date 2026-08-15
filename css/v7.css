@@ -479,16 +479,11 @@ button.d-link:hover { text-decoration: underline; }
 @keyframes skel-shimmer { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .skel-card { animation: none; } }
 
-/* mid-width hero: keep the athlete AND the graffiti in frame as the box narrows;
-   the right edge fades out so a partial graffiti letter reads as design, not a slice */
-.hero-slide:first-child .hero-img {
-  object-position: 68% center;
-  -webkit-mask-image: linear-gradient(90deg, #000 78%, rgba(0, 0, 0, 0.35) 92%, transparent 100%);
-  mask-image: linear-gradient(90deg, #000 78%, rgba(0, 0, 0, 0.35) 92%, transparent 100%);
-}
-/* portrait sources must keep the subject's head in a wide frame */
-.hero-slide:nth-child(3) .hero-img { object-position: center 18%; }
-.hero-slide:nth-child(5) .hero-img { object-position: center 24%; }
+/* hero slides all use the same treatment: clean dramatic center-crops with no
+   baked-in text — cover can crop them at any width and it always reads as design.
+   Slide 1's photo is text-free now (graffiti cropped out at the source); a slight
+   upward bias keeps the athlete's face in frame in wide boxes. */
+.hero-slide:first-child .hero-img { object-position: center 26%; }
 
 /* Shop-by-sport tiles */
 .shop-tiles {
