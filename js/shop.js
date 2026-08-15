@@ -556,7 +556,13 @@
         ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/';
         AI.session = await ort.InferenceSession.create('models/u2netp.onnx', { executionProviders: ['wasm'] });
         return AI.session;
-      })().catch((e) => { AI.failed = true; throw e; });
+      })().catch((e) => {
+        // a transient CDN hiccup gets one retry; a second failure disables AI for the session
+        AI.loading = null;
+        AI.fails = (AI.fails || 0) + 1;
+        if (AI.fails >= 2) AI.failed = true;
+        throw e;
+      });
     }
     return AI.loading;
   }
@@ -635,9 +641,10 @@
   // the AI decides where the piece goes and how big it starts — no input needed
   function placeGarment(p) {
     const name = (p.name || '').toLowerCase();
-    const kind = /shoe|sneaker|cleat|boot|trainer|slide|sandal|samba|dunk|530|jordan/.test(name) ? 'feet'
+    // "jordan 4" is a shoe; "jordan hoodie" is not. "shorts" go on legs; "short sleeve" does not.
+    const kind = /shoe|sneaker|cleat|boot|trainer|slide|sandal|samba|dunk|530|jordan\s*\d/.test(name) ? 'feet'
       : /\bhat\b|\bcap\b|beanie|headband|visor/.test(name) ? 'head'
-      : /short|pant|jogger|trouser|skirt|legging/.test(name) ? 'legs' : 'torso';
+      : /short(?!\s*-?\s*sleeve)|pant|jogger|trouser|skirt|legging/.test(name) ? 'legs' : 'torso';
     const spot = { feet: [50, 80], head: [50, 13], legs: [50, 62], torso: [50, 38] }[kind];
     const base = { feet: 28, head: 20, legs: 40, torso: 44 }[kind];
     const sizeIdx = { S: 0, M: 1, L: 2, XL: 3 }[state.size] || 0;
@@ -654,9 +661,11 @@
   async function applyGarment(p) {
     const g = $('#tryon-product');
     const seq = ++applySeq;
+    const key = state.tryonProduct;
     const src = p.big || p.img;
-    const cached = cutoutCache.get(state.tryonProduct);
+    const cached = cutoutCache.get(key);
     if (cached) {
+      g.onerror = null;
       g.classList.add('cutout'); g.classList.remove('blend');
       g.src = cached;
       placeGarment(p);
@@ -664,13 +673,17 @@
       return;
     }
     g.classList.remove('cutout', 'blend');
-    g.src = corsSafe(src); // show the raw photo while the AI works
+    // show the raw photo while the AI works; if the proxy is down, the direct
+    // CDN URL still displays (only canvas access needed the proxy)
+    g.onerror = () => { g.onerror = null; g.src = src; };
+    g.src = corsSafe(src);
     placeGarment(p);
     $('#tryon-caption').textContent = `AI is fitting ${p.name.replace(/\n/g, ' ')}…`;
     try {
       const cut = await aiCutout(src);
       if (seq !== applySeq) return; // a newer pick superseded this one
-      cutoutCache.set(state.tryonProduct, cut);
+      cutoutCache.set(key, cut);
+      g.onerror = null;
       g.src = cut;
       g.classList.add('cutout');
     } catch (e) {
@@ -687,7 +700,9 @@
     const av = $('#tryon-avatar'); if (!av) return;
     av.src = `img/av${state.athlete}.jpg`;
     // the stage model follows the chosen athlete
-    $('#tryon-athlete').src = state.athlete <= 2 ? 'img/model.jpg' : 'media/athlete-f.jpg';
+    const stageModel = $('#tryon-athlete');
+    stageModel.src = state.athlete <= 2 ? 'img/model.jpg' : 'media/athlete-f.jpg';
+    stageModel.alt = `Athlete ${state.athlete} stand-in model, full body`;
     applyGarment(PRODUCTS[state.tryonProduct]);
   }
 

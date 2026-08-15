@@ -102,7 +102,8 @@ async function searchGearTrade(q) {
   return ps.filter((p) => p.available).map((p) => {
     const price = Math.round(Number(p.price) || 0);
     const compare = Math.round(Number(p.compare_at_price_max) || 0);
-    const img = (p.featured_image && p.featured_image.url) || p.image || '';
+    let img = String((p.featured_image && p.featured_image.url) || p.image || '');
+    if (img.startsWith('//')) img = 'https:' + img; // Shopify often serves protocol-relative URLs
     return {
       id: 'gt-' + p.id,
       title: String(p.title || '').slice(0, 90),
