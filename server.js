@@ -94,6 +94,35 @@ async function searchSideline(q) {
   }).filter((x) => x.title && x.price > 0 && x.img.startsWith('https://') && x.url.startsWith('https://'));
 }
 
+/* ---------- GearTrade: Shopify storefront with public search JSON ---------- */
+async function searchGearTrade(q) {
+  const body = await fetchUrl('https://geartrade.com/search/suggest.json?q=' + encodeURIComponent(q) +
+    '&resources%5Btype%5D=product&resources%5Blimit%5D=10');
+  const ps = (((JSON.parse(body).resources || {}).results || {}).products) || [];
+  return ps.filter((p) => p.available).map((p) => {
+    const price = Math.round(Number(p.price) || 0);
+    const compare = Math.round(Number(p.compare_at_price_max) || 0);
+    const img = (p.featured_image && p.featured_image.url) || p.image || '';
+    return {
+      id: 'gt-' + p.id,
+      title: String(p.title || '').slice(0, 90),
+      price,
+      was: compare > price ? compare : 0,
+      size: '',
+      brand: p.vendor || '',
+      dept: '',
+      cond: 'Pre-owned',
+      img,
+      big: img,
+      likes: 0,
+      seller: 'GearTrade',
+      sellerAv: '',
+      url: 'https://geartrade.com' + String(p.url || '').split('?')[0],
+      store: 'GearTrade',
+    };
+  }).filter((x) => x.title && x.price > 0 && x.img.startsWith('https://') && x.url.startsWith('https://geartrade.com/'));
+}
+
 /* ---------- eBay Browse API — activates when a token is provided ---------- */
 async function searchEbay(q) {
   const token = process.env.EBAY_OAUTH_TOKEN;
@@ -139,6 +168,7 @@ async function apiSearch(q) {
   const tasks = [
     ['Poshmark', searchPoshmark(q)],
     ['SidelineSwap', searchSideline(q)],
+    ['GearTrade', searchGearTrade(q)],
     ['eBay', searchEbay(q)],
   ];
   const settled = await Promise.allSettled(tasks.map(([, p]) => p));

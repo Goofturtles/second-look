@@ -155,10 +155,11 @@
           if (res.ok) bakedData = await res.json();
         }
         if (bakedData && bakedData.items && bakedData.items.length) {
+          // each baked item carries the topic it was fetched under ("bucket"),
+          // so "soccer" matches soccer-topic items even when the title says "Predator"
           const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
-          const items = bakedData.q === q
-            ? bakedData.items
-            : bakedData.items.filter((it) => tokens.every((t) => it.title.toLowerCase().includes(t)));
+          const items = bakedData.items.filter((it) =>
+            tokens.every((t) => it.title.toLowerCase().includes(t) || (it.bucket || '').includes(t)));
           if (items.length) payload = { q, fetchedAt: bakedData.fetchedAt, stats: statsFor(items), items, baked: true };
         }
       } catch { /* no baked data either */ }
@@ -195,7 +196,9 @@
     if (snapshotFallback) list = pool.filter((w) => passes(w, true));
     if (state.sort === 'Price: low to high') list = [...list].sort((a, b) => a.now - b.now);
     if (state.sort === 'Price: high to low') list = [...list].sort((a, b) => b.now - a.now);
-    $('#results').innerHTML = list.map((w) => cardHtml(w.id, PRODUCTS[w.id] || w, true)).join('')
+    // broad queries over the multi-topic pool can match 1000+ items — cap the DOM
+    const shown = list.length > 120 ? list.slice(0, 120) : list;
+    $('#results').innerHTML = shown.map((w) => cardHtml(w.id, PRODUCTS[w.id] || w, true)).join('')
       || '<div class="empty-note">No matches — try clearing a filter.</div>';
     if (isLive) {
       const s = live.stats;
@@ -204,7 +207,7 @@
         ? ` · refreshed ${new Date(live.fetchedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
         : '';
       $('#results-count').textContent =
-        `${list.length} of ${s.total} ${live.baked ? 'real' : 'live'} listings · $${s.min}–$${s.max}, median $${s.median} · ${stores}${when}`;
+        `${list.length} of ${s.total} ${live.baked ? 'real' : 'live'} listings · $${s.min}–$${s.max}, median $${s.median} · ${stores}${when}${list.length > 120 ? ' · showing first 120' : ''}`;
     } else if (snapshotFallback) {
       $('#results-count').textContent = liveMiss === 'nomatch'
         ? `no matches in the refreshed listings — showing the snapshot of ${REAL.store}, ${REAL.capturedAt}`
@@ -392,7 +395,8 @@
   let heroTimer = null;
   const slides = $$('.hero-slide');
   function goSlide(i, user) {
-    state.slide = (i + 3) % 3;
+    const n = slides.length;
+    state.slide = ((i % n) + n) % n;
     heroTrack.style.transform = `translateX(-${state.slide * 100}%)`;
     dots.forEach((d, j) => {
       d.classList.toggle('active', j === state.slide);
@@ -527,12 +531,164 @@
     });
     updateTryon();
   }));
+  /* ---------- free on-device AI: U²-Net-P cutout via onnxruntime-web ----------
+     The model (models/u2netp.onnx, 4.6 MB) ships with the site; the wasm runtime
+     loads lazily from jsdelivr on first use. No accounts, no keys, no uploads —
+     the garment photo is segmented right in the browser and auto-placed. */
+  const AI = { session: null, loading: null, failed: false };
+  const cutoutCache = new Map(); // product id -> data-URL of the cutout
+  function loadOrt() {
+    if (window.ort) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js';
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('runtime load failed'));
+      document.head.appendChild(s);
+    });
+  }
+  function aiSession() {
+    if (AI.session) return Promise.resolve(AI.session);
+    if (AI.failed) return Promise.reject(new Error('ai unavailable'));
+    if (!AI.loading) {
+      AI.loading = (async () => {
+        await loadOrt();
+        ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/';
+        AI.session = await ort.InferenceSession.create('models/u2netp.onnx', { executionProviders: ['wasm'] });
+        return AI.session;
+      })().catch((e) => { AI.failed = true; throw e; });
+    }
+    return AI.loading;
+  }
+  // remote images go through images.weserv.nl so the canvas isn't tainted
+  function corsSafe(src) {
+    if (!/^https?:/.test(src)) return src; // same-origin and data: are already safe
+    return 'https://images.weserv.nl/?url=' + encodeURIComponent(src.replace(/^https?:\/\//, '')) + '&w=640';
+  }
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = () => resolve(im);
+      im.onerror = () => reject(new Error('image load failed'));
+      im.src = corsSafe(src);
+    });
+  }
+  async function aiCutout(src) {
+    const im = await loadImage(src);
+    const session = await aiSession();
+    const S = 320; // u2netp's input size
+    const c = document.createElement('canvas'); c.width = S; c.height = S;
+    const cx = c.getContext('2d');
+    cx.drawImage(im, 0, 0, S, S);
+    const { data } = cx.getImageData(0, 0, S, S);
+    const input = new Float32Array(3 * S * S);
+    const mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225];
+    for (let i = 0; i < S * S; i++) {
+      input[i] = (data[i * 4] / 255 - mean[0]) / std[0];
+      input[S * S + i] = (data[i * 4 + 1] / 255 - mean[1]) / std[1];
+      input[2 * S * S + i] = (data[i * 4 + 2] / 255 - mean[2]) / std[2];
+    }
+    const feeds = {};
+    feeds[session.inputNames[0]] = new ort.Tensor('float32', input, [1, 3, S, S]);
+    const out = await session.run(feeds);
+    const mask = out[session.outputNames[0]].data;
+    let mn = 1, mx = 0;
+    for (let i = 0; i < mask.length; i++) { if (mask[i] < mn) mn = mask[i]; if (mask[i] > mx) mx = mask[i]; }
+    const range = mx - mn || 1;
+    // alpha-only mask canvas, upscaled onto the full-res image with destination-in
+    const mc = document.createElement('canvas'); mc.width = S; mc.height = S;
+    const mctx = mc.getContext('2d');
+    const mimg = mctx.createImageData(S, S);
+    for (let i = 0; i < S * S; i++) {
+      mimg.data[i * 4 + 3] = Math.round(Math.max(0, Math.min(1, (mask[i] - mn) / range)) * 255);
+    }
+    mctx.putImageData(mimg, 0, 0);
+    const w = im.naturalWidth, h = im.naturalHeight;
+    const oc = document.createElement('canvas'); oc.width = w; oc.height = h;
+    const octx = oc.getContext('2d');
+    octx.drawImage(im, 0, 0, w, h);
+    octx.globalCompositeOperation = 'destination-in';
+    octx.imageSmoothingEnabled = true;
+    octx.drawImage(mc, 0, 0, S, S, 0, 0, w, h); // smoothing feathers the mask edge
+    // sanity check + bounding box, so placement is about the garment, not the photo
+    const od = octx.getImageData(0, 0, w, h).data;
+    let minX = w, minY = h, maxX = 0, maxY = 0, count = 0;
+    for (let y = 0; y < h; y += 2) {
+      for (let x = 0; x < w; x += 2) {
+        if (od[(y * w + x) * 4 + 3] > 40) {
+          count++;
+          if (x < minX) minX = x; if (x > maxX) maxX = x;
+          if (y < minY) minY = y; if (y > maxY) maxY = y;
+        }
+      }
+    }
+    const frac = (count * 4) / (w * h);
+    if (frac < 0.04 || frac > 0.98 || maxX <= minX) throw new Error('mask unusable');
+    const pad = Math.round(Math.max(w, h) * 0.02);
+    const bx = Math.max(0, minX - pad), by = Math.max(0, minY - pad);
+    const bw = Math.min(w, maxX + pad) - bx, bh = Math.min(h, maxY + pad) - by;
+    const fc = document.createElement('canvas'); fc.width = bw; fc.height = bh;
+    fc.getContext('2d').drawImage(oc, bx, by, bw, bh, 0, 0, bw, bh);
+    return fc.toDataURL('image/png');
+  }
+  // the AI decides where the piece goes and how big it starts — no input needed
+  function placeGarment(p) {
+    const name = (p.name || '').toLowerCase();
+    const kind = /shoe|sneaker|cleat|boot|trainer|slide|sandal|samba|dunk|530|jordan/.test(name) ? 'feet'
+      : /\bhat\b|\bcap\b|beanie|headband|visor/.test(name) ? 'head'
+      : /short|pant|jogger|trouser|skirt|legging/.test(name) ? 'legs' : 'torso';
+    const spot = { feet: [50, 80], head: [50, 13], legs: [50, 62], torso: [50, 38] }[kind];
+    const base = { feet: 28, head: 20, legs: 40, torso: 44 }[kind];
+    const sizeIdx = { S: 0, M: 1, L: 2, XL: 3 }[state.size] || 0;
+    const fitNudge = state.fit === 'Relaxed' ? 3 : state.fit === 'Fitted' ? -3 : 0;
+    const width = base + sizeIdx * 5 + fitNudge;
+    const g = $('#tryon-product');
+    g.style.left = spot[0] + '%';
+    g.style.top = spot[1] + '%';
+    g.style.width = width + '%';
+    const slider = $('#tryon-size');
+    if (slider) slider.value = width; // keep the manual slider in sync
+  }
+  let applySeq = 0;
+  async function applyGarment(p) {
+    const g = $('#tryon-product');
+    const seq = ++applySeq;
+    const src = p.big || p.img;
+    const cached = cutoutCache.get(state.tryonProduct);
+    if (cached) {
+      g.classList.add('cutout'); g.classList.remove('blend');
+      g.src = cached;
+      placeGarment(p);
+      updateTryonCaption();
+      return;
+    }
+    g.classList.remove('cutout', 'blend');
+    g.src = corsSafe(src); // show the raw photo while the AI works
+    placeGarment(p);
+    $('#tryon-caption').textContent = `AI is fitting ${p.name.replace(/\n/g, ' ')}…`;
+    try {
+      const cut = await aiCutout(src);
+      if (seq !== applySeq) return; // a newer pick superseded this one
+      cutoutCache.set(state.tryonProduct, cut);
+      g.src = cut;
+      g.classList.add('cutout');
+    } catch (e) {
+      if (seq !== applySeq) return;
+      g.classList.add('blend'); // free fallback: light backgrounds melt into the scene
+    }
+    updateTryonCaption();
+  }
+  function updateTryonCaption() {
+    const p = PRODUCTS[state.tryonProduct];
+    $('#tryon-caption').textContent = `Athlete ${state.athlete} · ${p.name.replace('\n', ' ')} · ${state.size} · ${state.fit}`;
+  }
   function updateTryon() {
     const av = $('#tryon-avatar'); if (!av) return;
     av.src = `img/av${state.athlete}.jpg`;
-    const p = PRODUCTS[state.tryonProduct];
-    $('#tryon-product').src = p.big || p.img;
-    $('#tryon-caption').textContent = `Athlete ${state.athlete} · ${p.name.replace('\n', ' ')} · ${state.size} · ${state.fit}`;
+    // the stage model follows the chosen athlete
+    $('#tryon-athlete').src = state.athlete <= 2 ? 'img/model.jpg' : 'media/athlete-f.jpg';
+    applyGarment(PRODUCTS[state.tryonProduct]);
   }
 
   /* draggable + resizable garment on the model */
