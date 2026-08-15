@@ -162,16 +162,21 @@
   }
   // the multi-topic bake fills every category (bags, accessories, women…) with
   // real gear on home — in live mode AND static mode alike
-  async function ensureBaked() {
-    if (bakedData) return bakedData;
-    try {
-      const res = await fetch('data/live.json');
-      if (res.ok) {
-        bakedData = await res.json();
-        if (bakedData && bakedData.items) registerListings(bakedData.items);
-      }
-    } catch (e) { /* no data file — live results still register as they arrive */ }
-    return bakedData;
+  let bakedPromise = null;
+  function ensureBaked() {
+    if (!bakedPromise) {
+      bakedPromise = (async () => {
+        try {
+          const res = await fetch('data/live.json');
+          if (res.ok) {
+            bakedData = await res.json();
+            if (bakedData && bakedData.items) registerListings(bakedData.items);
+          }
+        } catch (e) { /* no data file — live results still register as they arrive */ }
+        return bakedData;
+      })();
+    }
+    return bakedPromise;
   }
   let loadingFor = null;    // the query whose live fetch is in flight (drives the skeleton grid)
   async function fetchLive(q) {
@@ -207,6 +212,7 @@
       } catch { /* no baked data either */ }
     }
     if (seq !== liveSeq) return; // a newer search superseded this one
+    loadingFor = null; // this fetch is done — the skeleton state must end with it
     if (payload) {
       registerListings(payload.items);
       live = payload;
@@ -262,7 +268,7 @@
       || '<div class="empty-note">No matches — try clearing a filter.</div>';
     if (catFallback) {
       $('#results-count').textContent =
-        `${list.length} real ${state.cat} listings from today's refreshed pool`;
+        `${list.length} real ${state.cat} listings from today's refreshed pool${list.length > 120 ? ' · showing first 120' : ''}`;
     } else if (isLive) {
       const s = live.stats;
       const stores = Object.entries(s.perStore).map(([k, v]) => `${k} ${v}`).join(' · ');
@@ -789,6 +795,7 @@
      Fires automatically after the cutout lands; the cutout stays if it can't. */
   let vtonSeq = 0;
   const vtonUrls = new Map(); // athlete|garment -> object URL of the generated photo
+  const vtonDismissed = new Set(); // keys the user tapped away — respect that choice
   async function generateVton(p) {
     const gen = $('#tryon-gen');
     if (!gen) return;
@@ -796,6 +803,8 @@
     gen.hidden = true; // a new pick always starts on the overlay
     const garment = p.big || p.img;
     const key = state.athlete + '|' + garment;
+    if (vtonDismissed.has(key)) return;
+    gen.dataset.key = key;
     const cached = vtonUrls.get(key);
     if (cached) { $('#tryon-gen-img').src = cached; gen.hidden = false; return; }
     for (let attempt = 0; attempt < 4; attempt++) {
@@ -819,7 +828,11 @@
       return;
     }
   }
-  $('#tryon-gen') && $('#tryon-gen').addEventListener('click', () => { $('#tryon-gen').hidden = true; });
+  $('#tryon-gen') && $('#tryon-gen').addEventListener('click', () => {
+    const gen = $('#tryon-gen');
+    gen.hidden = true;
+    if (gen.dataset.key) vtonDismissed.add(gen.dataset.key);
+  });
   function updateTryon() {
     const av = $('#tryon-avatar'); if (!av) return;
     av.src = `img/av${state.athlete}.jpg`;
