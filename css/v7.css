@@ -580,7 +580,6 @@ button.d-link:hover { text-decoration: underline; }
 .shop-link svg { width: 14px; height: 14px; color: var(--text-2); }
 
 @media (max-width: 1024px) {
-  .tryon-grid { grid-template-columns: 1fr; }
   .looks-grid, .how-steps { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 640px) {
