@@ -625,6 +625,9 @@ body.tryon-mode .topbar { display: none; }
   .gt-seg { order: 3; width: 100%; justify-content: center; }
   .gt-tab { flex: 1; text-align: center; padding: 10px 8px; }
   .full-look { right: 12px; bottom: 12px; top: auto; width: 112px; }
+  /* the panel doesn't scroll on mobile — the dock flows normally instead of
+     sticking to the viewport edge over the home indicator */
+  .gl-dock { position: static; margin: 16px 0 0; padding: 0; border-top: none; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 .glass-left {
   position: absolute; left: 22px; top: 22px; bottom: 22px;

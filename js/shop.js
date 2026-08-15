@@ -900,6 +900,11 @@
       if (seq !== vtonSeq) return;
       const url = URL.createObjectURL(blob);
       vtonUrls.set(key, url);
+      if (vtonUrls.size > 24) { // bound blob memory in long sessions
+        const oldest = vtonUrls.keys().next().value;
+        URL.revokeObjectURL(vtonUrls.get(oldest));
+        vtonUrls.delete(oldest);
+      }
       hush();
       $('#tryon-gen-img').src = url;
       if (reveal) gen.hidden = false;
@@ -939,7 +944,8 @@
   function updateTryon(reveal = true) {
     // a fit/size/height tweak must be VISIBLE: drop to the overlay so the garment
     // change shows instead of being covered by the cached AI photo
-    if (!reveal) $('#tryon-gen').hidden = true;
+    const genEl = $('#tryon-gen');
+    if (!reveal && genEl) genEl.hidden = true;
     // every athlete has their OWN full-body model photo — switching is always visible
     const stageModel = $('#tryon-athlete');
     stageModel.src = MODEL_PHOTOS[state.athlete - 1] || MODEL_PHOTOS[1];
@@ -1092,6 +1098,8 @@
   $('#gl-reset') && $('#gl-reset').addEventListener('click', () => {
     state.athlete = 2; state.size = 'M'; state.fit = 'Relaxed'; state.height = HEIGHTS[2];
     tryonList = null; ++tryonSeq;
+    vtonDismissed.clear(); // reset also un-dismisses tapped-away AI looks
+    triedHistory = [];
     $('#gl-search-input').value = '';
     const sh = $('#sel-height'); if (sh) sh.firstChild.textContent = state.height;
     const ss = $('#sel-size'); if (ss) ss.firstChild.textContent = state.size;

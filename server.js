@@ -153,7 +153,7 @@ async function searchEbay(q) {
 
 /* ---------- generative try-on: the free Kolors space dresses the model ---------- */
 const VTON_SPACE = 'https://kwai-kolors-kolors-virtual-try-on.hf.space';
-const VTON_HOSTS = ['di2ponv0v5otw.cloudfront.net', 'images.sidelineswap.com', 'edge.images.sidelineswap.com', 'cdn.shopify.com'];
+const VTON_HOSTS = ['di2ponv0v5otw.cloudfront.net', 'images.sidelineswap.com', 'edge.images.sidelineswap.com', 'cdn.shopify.com', 'i.ebayimg.com'];
 const vtonCache = new Map(); // person|garment -> jpeg Buffer
 let vtonBusy = false;
 
