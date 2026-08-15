@@ -302,11 +302,11 @@
       : '<div class="empty-note">Nothing saved yet.</div>';
     $('#profile-viewed').innerHTML = state.viewed.slice(0, 4).map((id) => cardHtml(id, PRODUCTS[id], true)).join('');
   }
-  let tryonList = null; // ids currently shown in the try-on search row
+  let tryonList = null; // null = no search yet (show picks); [] = searched, nothing found
   function renderTryonProducts() {
     const box = $('#gl-results');
     if (!box) return;
-    const ids = (tryonList && tryonList.length ? tryonList : PICK_IDS).filter((id) => PRODUCTS[id]);
+    const ids = (tryonList === null ? PICK_IDS : tryonList).filter((id) => PRODUCTS[id]);
     box.innerHTML = ids.map((id) => `
       <button class="gl-thumb ${state.tryonProduct === id ? 'selected' : ''}" type="button" data-tryon="${esc(id)}"
         aria-pressed="${state.tryonProduct === id}" aria-label="Try on ${esc(PRODUCTS[id].name.replace(/\n/g, ' '))}">
@@ -942,7 +942,8 @@
 
   /* draggable + resizable garment on the model */
   (function wireTryonStage() {
-    const stage = $('#tryon-stage');
+    // drag percentages are relative to the PHOTO box, matching placeGarment
+    const stage = $('#stage-photo') || $('#tryon-stage');
     const garment = $('#tryon-product');
     if (!stage || !garment) return;
     let drag = null;
@@ -972,6 +973,7 @@
   document.addEventListener('click', (e) => {
     const pick = e.target.closest('[data-tryon]');
     if (!pick) return;
+    ++tryonSeq; // a manual pick outranks any search still in flight
     state.tryonProduct = pick.dataset.tryon;
     renderTryonProducts();
     updateTryon();

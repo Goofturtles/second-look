@@ -378,14 +378,16 @@
     <section class="view" id="view-tryon" hidden>
       <h1 class="visually-hidden">Try-On</h1>
       <div class="glass-stage" id="tryon-stage">
-        <img id="tryon-athlete" src="img/model.jpg" alt="Studio model, full body">
-        <span class="sim-tag" aria-hidden="true">Simulation</span>
-        <img id="tryon-product" src="img/big-reebok.jpg" alt="Selected gear — drag to place">
-        <button class="tryon-gen" id="tryon-gen" type="button" hidden aria-label="AI-generated photo of the model wearing the selected gear — press to hide">
-          <img id="tryon-gen-img" alt="">
-          <span class="gen-tag" aria-hidden="true">AI GENERATED · TAP TO HIDE</span>
-        </button>
-        <span class="gen-status" id="gen-status" role="status" hidden></span>
+        <div class="stage-photo" id="stage-photo">
+          <img id="tryon-athlete" src="img/model.jpg" alt="Studio model, full body">
+          <span class="sim-tag" aria-hidden="true">Simulation</span>
+          <img id="tryon-product" src="img/big-reebok.jpg" alt="Selected gear — drag to place">
+          <button class="tryon-gen" id="tryon-gen" type="button" hidden aria-label="AI-generated photo of the model wearing the selected gear — press to hide">
+            <img id="tryon-gen-img" alt="">
+            <span class="gen-tag" aria-hidden="true">AI GENERATED · TAP TO HIDE</span>
+          </button>
+          <span class="gen-status" id="gen-status" role="status" hidden></span>
+        </div>
         <p class="tryon-caption visually-hidden" id="tryon-caption">Athlete 2 · Vintage Reebok Windbreaker · M · Relaxed</p>
 
         <!-- left glass panel: who's wearing it, and how -->
@@ -394,7 +396,7 @@
           <p class="gl-label" id="gl-ath-label">Athlete</p>
           <div class="gl-avatars" role="group" aria-labelledby="gl-ath-label">
             <button class="gl-av athlete" type="button" aria-pressed="false" aria-label="Athlete 1"><img src="img/av1.jpg" alt=""></button>
-            <button class="gl-av athlete" type="button" aria-pressed="true" aria-label="Athlete 2"><img src="img/av2.jpg" alt="" id="tryon-avatar"></button>
+            <button class="gl-av athlete" type="button" aria-pressed="true" aria-label="Athlete 2"><img src="img/av2.jpg" alt=""></button>
             <button class="gl-av athlete" type="button" aria-pressed="false" aria-label="Athlete 3"><img src="img/av3.jpg" alt=""></button>
             <button class="gl-av athlete" type="button" aria-pressed="false" aria-label="Athlete 4"><img src="img/av4.jpg" alt=""></button>
           </div>

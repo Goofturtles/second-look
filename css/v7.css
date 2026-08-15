@@ -225,53 +225,6 @@
 .thumb:hover { border-color: rgba(255, 255, 255, 0.3); }
 .thumb.selected { border-color: var(--lime); }
 
-/* try-on view */
-.tryon-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; align-items: start; }
-.tryon-stage {
-  position: relative;
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-panel);
-  min-height: 480px;
-  display: flex; align-items: center; justify-content: center;
-  overflow: hidden;
-}
-#tryon-athlete {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; opacity: 0.35; filter: blur(2px);
-}
-#tryon-product {
-  position: relative; z-index: 2;
-  max-width: 62%; max-height: 68%;
-  border-radius: 16px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
-}
-.tryon-caption {
-  position: absolute; left: 20px; bottom: 16px; z-index: 3;
-  margin: 0;
-  background: rgba(9, 19, 27, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 99px;
-  padding: 9px 16px;
-  font-size: 12.5px;
-}
-.tryon-side { background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--r-panel); padding: 22px; }
-.tryon-products { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
-.tryon-pick {
-  display: flex; align-items: center; gap: 12px;
-  background: var(--pill);
-  border: 1px solid var(--line);
-  color: var(--text);
-  font-family: var(--font); font-size: 14px; font-weight: 500; text-align: left;
-  border-radius: 12px;
-  padding: 8px 12px 8px 8px;
-  transition: border-color 0.2s;
-  cursor: pointer;
-}
-.tryon-pick img { width: 58px; height: 40px; object-fit: cover; border-radius: 8px; }
-.tryon-pick:hover { border-color: rgba(255, 255, 255, 0.25); }
-.tryon-pick.selected { border-color: var(--lime); }
-
 /* looks + community */
 .looks-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
 .look-card {
@@ -426,7 +379,8 @@ button.d-link:hover { text-decoration: underline; }
   position: absolute; z-index: 2;
   left: 50%; top: 34%;
   width: 42%;
-  max-width: none; max-height: none;
+  max-width: none; max-height: 72%;
+  object-fit: contain; /* oversized cutouts letterbox invisibly instead of spilling */
   transform: translate(-50%, -50%);
   cursor: grab;
   border-radius: 12px;
@@ -476,12 +430,17 @@ button.d-link:hover { text-decoration: underline; }
   min-height: 80vh;
   background: #060d13;
 }
-.glass-stage > #tryon-athlete {
+/* the photo box is the coordinate space for the garment, overlay and drag math —
+   percentages always mean "of the photo", never "of the stacked mobile column" */
+.stage-photo { position: absolute; inset: 0; }
+.stage-photo > #tryon-athlete {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover; object-position: center 8%;
   opacity: 1; filter: none;
 }
+/* labels and notes sit on glass — lighten the muted tone inside panels for AA */
+.gl-panel { --text-2: #B9C2CB; }
 .glass-left {
   position: absolute; left: 22px; top: 22px; bottom: 22px;
   width: 300px; z-index: 5;
@@ -504,16 +463,13 @@ button.d-link:hover { text-decoration: underline; }
 .glass-stage .sim-tag { top: auto; bottom: 18px; right: auto; left: 50%; transform: translateX(-50%); z-index: 4; }
 @media (max-width: 1024px) {
   .glass-stage { display: flex; flex-direction: column; min-height: 0; gap: 14px; padding-bottom: 14px; }
-  .glass-stage > #tryon-athlete { position: relative; inset: auto; height: 52vh; order: 0; }
+  .stage-photo { position: relative; inset: auto; height: 52vh; order: 0; }
   .glass-left, .glass-right {
     position: static; width: auto; max-height: none;
     margin: 0 14px; overflow: visible;
   }
   .glass-left { order: 2; }
   .glass-right { order: 1; }
-  .tryon-gen { height: 52vh; bottom: auto; }
-  .glass-stage .sim-tag { top: calc(52vh - 40px); bottom: auto; }
-  #tryon-product { top: 26vh; }
 }
 
 /* live status while the AI dresses the model — the wait must never look dead */
