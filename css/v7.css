@@ -554,8 +554,10 @@ body.tryon-mode .topbar { display: none; }
 .gl-wearblock p { margin: 4px 0 6px; font-size: 13px; color: var(--text); line-height: 1.5; }
 .gl-viewlink { color: var(--lime); font-size: 12.5px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .gl-viewlink:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+.gl-colorrow[hidden], .gl-pill[hidden] { display: none; } /* hidden must beat the display overrides */
 .gl-colorrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
-.gl-colorrow b { font-size: 13px; font-weight: 600; }
+.gl-colorrow .gl-label { display: block; margin: 0 0 4px; }
+.gl-colorrow b { display: block; font-size: 13px; font-weight: 600; }
 .gl-swatch { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.25); background: #1d5c3e; }
 .gl-ctarow { display: flex; gap: 10px; align-items: stretch; margin-top: 16px; }
 .gl-ctarow .gl-cta { margin-top: 0; flex: 1; justify-content: center; gap: 10px; }
