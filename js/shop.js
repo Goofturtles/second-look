@@ -804,7 +804,11 @@
     gen.hidden = true; // a new pick always starts on the overlay
     const garment = p.big || p.img;
     const key = state.athlete + '|' + garment;
-    if (vtonDismissed.has(key)) return;
+    if (vtonDismissed.has(key)) {
+      const s = $('#gen-status');
+      if (s) s.hidden = true; // a superseded call's pill must not outlive it
+      return;
+    }
     gen.dataset.key = key;
     const status = $('#gen-status');
     const say = (msg, done) => {
