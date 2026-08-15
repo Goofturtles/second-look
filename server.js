@@ -193,12 +193,32 @@ async function apiSearch(q) {
   return payload;
 }
 
+// per-IP throttle for UNCACHED searches only — a public visitor must not be able
+// to use this box to hammer the shops (cached answers stay free and instant)
+const ipSearches = new Map(); // ip -> [timestamps of cache-miss searches]
+const RATE_MAX = 12, RATE_WINDOW = 60 * 1000;
+function rateLimited(ip) {
+  const now = Date.now();
+  const hits = (ipSearches.get(ip) || []).filter((t) => now - t < RATE_WINDOW);
+  if (hits.length >= RATE_MAX) { ipSearches.set(ip, hits); return true; }
+  hits.push(now);
+  ipSearches.set(ip, hits);
+  if (ipSearches.size > 1000) ipSearches.clear(); // crude bound, resets politely
+  return false;
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const u = new URL(req.url, 'http://localhost');
     if (u.pathname === '/api/search') {
       const q = (u.searchParams.get('q') || '').slice(0, 80).trim();
       if (!q) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end('{"error":"q required"}'); }
+      const cachedHit = cache.get(q.toLowerCase());
+      const isCached = cachedHit && Date.now() - cachedHit.t < TTL;
+      if (!isCached && rateLimited(req.socket.remoteAddress || '')) {
+        res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '30' });
+        return res.end('{"error":"too many searches — try again in a moment"}');
+      }
       try {
         const payload = await apiSearch(q);
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
