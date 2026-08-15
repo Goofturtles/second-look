@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css">
-<link rel="stylesheet" href="css/v7.css">
+<link rel="stylesheet" href="css/app.css?v=10">
+<link rel="stylesheet" href="css/v7.css?v=10">
 </head>
 <body>
 
@@ -31,7 +31,7 @@
         <svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>Home</a>
       <a href="#" class="side-link" data-nav="discover">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Discover</a>
-      <a href="#" class="side-link" data-nav="discover">
+      <a href="#" class="side-link" data-nav="shop">
         <svg viewBox="0 0 24 24"><path d="M6 7h12l1 13H5zM9 7a3 3 0 0 1 6 0"/></svg>Shop</a>
       <a href="#" class="side-link" data-nav="looks">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3 4.7-5"/></svg>Looks</a>
@@ -226,7 +226,7 @@
       <div class="disc-grid">
         <div class="disc-left">
           <div class="results-head">
-            <h1>Results for &ldquo;<span id="query-echo">nike windrunner</span>&rdquo; <span class="results-count" id="results-count" role="status">42 items</span></h1>
+            <h1><span id="results-label">Trending gear</span> <span class="results-count" id="results-count" role="status">42 items</span></h1>
             <div class="sort">
               <span id="lbl-sort">Sort by</span>
               <button class="spec-select" id="sel-sort" type="button" aria-labelledby="lbl-sort sel-sort" aria-expanded="false">Most relevant<svg viewBox="0 0 24 24"><path d="M8 10l4 4 4-4"/></svg></button>
@@ -358,6 +358,12 @@
           <span><b>Real gear. Real people.</b>Trusted by our community</span>
         </div>
       </div>
+    </section>
+
+    <!-- ================= SHOP VIEW (shop by sport / type) ================= -->
+    <section class="view" id="view-shop" hidden>
+      <div class="page-head"><h1>Shop by sport</h1><p class="page-sub">Real listings, sorted the way you play.</p></div>
+      <div class="shop-tiles" id="shop-tiles"></div>
     </section>
 
     <!-- ================= SAVED VIEW ================= -->
@@ -511,7 +517,7 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/listings.js"></script>
-<script src="js/shop.js"></script>
+<script src="js/listings.js?v=10"></script>
+<script src="js/shop.js?v=10"></script>
 </body>
 </html>

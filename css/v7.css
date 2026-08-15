@@ -395,12 +395,17 @@ button.d-link:hover { text-decoration: underline; }
 /* fly-to-bag animation */
 .fly-bag {
   position: fixed; z-index: 400;
-  width: 22px; height: 22px;
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  /* a lime chip behind the glyph — the dark icon must never vanish into the dark page */
+  background: var(--lime);
+  border-radius: 50%;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
   color: var(--lime-ink);
   pointer-events: none;
   transition: transform 0.8s cubic-bezier(0.35, -0.2, 0.65, 0.5), opacity 0.8s ease-in;
 }
-.fly-bag svg { width: 22px; height: 22px; stroke-width: 2; }
+.fly-bag svg { width: 20px; height: 20px; stroke-width: 2; }
 @keyframes badge-bump { 50% { transform: scale(1.5); } }
 .badge.bump { animation: badge-bump 0.35s var(--ease); }
 
@@ -433,6 +438,49 @@ button.d-link:hover { text-decoration: underline; }
   border-radius: 0;
   box-shadow: none;
 }
+
+/* search-in-flight skeleton cards — shimmer in the grid until real results land */
+.skel-card {
+  border-radius: 18px;
+  aspect-ratio: 407 / 280;
+  background: linear-gradient(100deg, #0B141C 40%, #121D26 50%, #0B141C 60%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.2s linear infinite;
+}
+@keyframes skel-shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel-card { animation: none; } }
+
+/* mid-width hero: keep the athlete AND the graffiti in frame as the box narrows */
+.hero-slide:first-child .hero-img { object-position: 68% center; }
+
+/* Shop-by-sport tiles */
+.shop-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  padding: 4px 0 40px;
+}
+.shop-tile {
+  position: relative;
+  text-align: left;
+  background: var(--panel, #09131B);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: 18px;
+  padding: 22px 20px 20px;
+  color: var(--text, #F2F5F7);
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.shop-tile:hover { border-color: var(--lime); transform: translateY(-2px); }
+.shop-tile:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+.shop-tile b { display: block; font-size: 19px; font-weight: 700; margin-bottom: 4px; }
+.shop-tile span { color: var(--text-2, #97A1AB); font-size: 13px; }
+.shop-tile svg {
+  position: absolute; right: 16px; top: 22px;
+  width: 20px; height: 20px;
+  stroke: var(--lime); stroke-width: 2; fill: none;
+}
+@media (prefers-reduced-motion: reduce) { .shop-tile:hover { transform: none; } }
 .sim-tag {
   position: absolute; top: 14px; right: 14px; z-index: 3;
   background: rgba(9, 19, 27, 0.85);

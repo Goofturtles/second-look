@@ -12,7 +12,7 @@ const TOPICS = [
   'soccer jersey', 'soccer cleats', 'basketball shoes', 'basketball jersey',
   'baseball glove', 'football jersey', 'hockey jersey', 'running shoes',
   'tennis racket', 'golf polo', 'ski jacket', 'track jacket', 'hoodie',
-  'new balance', 'adidas samba',
+  'new balance', 'adidas samba', 'gym bag', 'baseball cap',
 ];
 
 (async () => {

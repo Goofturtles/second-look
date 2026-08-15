@@ -10,6 +10,7 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 
 const ROOT = __dirname;
 const PORT = Number(process.env.PORT) || 3488;
@@ -161,6 +162,7 @@ function computeStats(items) {
 
 const cache = new Map(); // q -> { t, payload }
 const TTL = 15 * 60 * 1000;
+const gzCache = new Map(); // file|mtime -> gzipped buffer (bounded, see static branch)
 
 async function apiSearch(q) {
   const key = q.toLowerCase().trim();
@@ -221,22 +223,55 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         const payload = await apiSearch(q);
-        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-        return res.end(JSON.stringify(payload));
+        const body = JSON.stringify(payload);
+        const head = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+        if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
+          head['Content-Encoding'] = 'gzip';
+          res.writeHead(200, head);
+          return res.end(zlib.gzipSync(body));
+        }
+        res.writeHead(200, head);
+        return res.end(body);
       } catch (e) {
         res.writeHead(502, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ error: String(e.message || e).slice(0, 120) }));
       }
     }
-    // static files
+    // static files: gzip text, cache aggressively, answer revalidations with 304
     let p = decodeURIComponent(u.pathname);
     if (p === '/') p = '/index.html';
     const file = path.join(ROOT, p);
     if (!file.startsWith(ROOT) || p.includes('..') || p.includes('\0')) { res.writeHead(403); return res.end(); }
-    fs.readFile(file, (err, buf) => {
-      if (err) { res.writeHead(404); return res.end('not found'); }
-      res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream' });
-      res.end(buf);
+    fs.stat(file, (serr, st) => {
+      if (serr || !st.isFile()) { res.writeHead(404); return res.end('not found'); }
+      const lastMod = st.mtime.toUTCString();
+      const ext = path.extname(file).toLowerCase();
+      // everything revalidates (no-cache = "check first"): a 304 costs only headers,
+      // and shipped fixes are visible immediately instead of a day later
+      const baseHead = {
+        'Content-Type': MIME[ext] || 'application/octet-stream',
+        'Last-Modified': lastMod,
+        'Cache-Control': 'no-cache',
+      };
+      if (req.headers['if-modified-since'] === lastMod) { res.writeHead(304, baseHead); return res.end(); }
+      fs.readFile(file, (err, buf) => {
+        if (err) { res.writeHead(404); return res.end('not found'); }
+        const texty = ['.html', '.css', '.js', '.json', '.svg'].includes(ext);
+        if (texty && buf.length > 1024 && /\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
+          const key = file + '|' + st.mtimeMs;
+          let gz = gzCache.get(key);
+          if (!gz) {
+            gz = zlib.gzipSync(buf);
+            gzCache.set(key, gz);
+            if (gzCache.size > 40) gzCache.delete(gzCache.keys().next().value);
+          }
+          baseHead['Content-Encoding'] = 'gzip';
+          res.writeHead(200, baseHead);
+          return res.end(gz);
+        }
+        res.writeHead(200, baseHead);
+        res.end(buf);
+      });
     });
   } catch (e) {
     // a malformed URL (bad percent-encoding etc.) must never take the process down

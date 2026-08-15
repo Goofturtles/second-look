@@ -54,6 +54,7 @@
     bag: [],
     bellRead: false,
     cat: 'All',
+    query: '',
     filters: { Size: 'All', Color: 'All', Condition: 'All', Price: 'All', Category: 'All', Brand: 'All' },
     sort: 'Most relevant',
     athlete: 2, fit: 'Relaxed', height: "6'0\" (183 cm)", size: 'M',
@@ -92,9 +93,31 @@
   }
 
   /* ---------- renders ---------- */
+  // real categories come from the marketplace department plus what the title says
+  function keywordCats(name) {
+    const n = (name || '').toLowerCase();
+    const cats = [];
+    if (/shoe|sneaker|cleat|boot|trainer|slide|sandal|samba|dunk|jordan\s*\d|530|running/.test(n)) cats.push('Shoes');
+    if (/\bbag\b|backpack|duffel|duffle|tote|sack/.test(n)) cats.push('Bags');
+    if (/\bhat\b|\bcap\b|beanie|glove|mitt|sock|belt|scarf|headband|visor|racket|racquet/.test(n)) cats.push('Accessories');
+    if (/women|womens|wmns|w's/.test(n)) cats.push('Women');
+    if (/\bmen\b|mens|men's/.test(n)) cats.push('Men');
+    return cats;
+  }
+  function augmentCats(p) {
+    const extra = keywordCats(p.name);
+    p.cats = [...new Set([...(p.cats || []), ...extra])];
+  }
+  Object.values(PRODUCTS).forEach(augmentCats);
   function renderPicks() {
     const list = PICK_IDS.concat(state.listings.map((l) => l.id));
-    const filtered = list.filter((id) => state.cat === 'All' || (PRODUCTS[id].cats || []).includes(state.cat));
+    let filtered = list.filter((id) => state.cat === 'All' || (PRODUCTS[id].cats || []).includes(state.cat));
+    if (filtered.length < 4 && state.cat !== 'All') {
+      // fill the row with real listings from the live pool that match the category
+      const extras = Object.keys(PRODUCTS).filter((id) =>
+        !filtered.includes(id) && PRODUCTS[id].real && (PRODUCTS[id].cats || []).includes(state.cat));
+      filtered = filtered.concat(extras.slice(0, 4 - filtered.length));
+    }
     $('#picks').innerHTML = filtered.slice(0, 4).map((id) => cardHtml(id, PRODUCTS[id], false)).join('')
       || '<div class="empty-note">Nothing in this category yet.</div>';
   }
@@ -124,7 +147,7 @@
   // register listings so product page, bag, hearts and try-on all work
   function registerListings(items) {
     for (const it of items) {
-      PRODUCTS[it.id] = {
+      const p = {
         name: it.title, img: it.img, big: it.big || it.img, now: it.price,
         was: it.was || 0,
         off: it.was ? Math.round((1 - it.price / it.was) * 100) + '% off' : '',
@@ -132,28 +155,47 @@
         cond: it.cond, url: it.url, real: true, store: it.store,
         seller: it.seller || '', sellerAv: it.sellerAv || '', likes: it.likes || 0,
       };
+      augmentCats(p);
+      PRODUCTS[it.id] = p;
     }
+    if (!$('#view-home').hidden) renderPicks(); // category rows can now fill with real gear
   }
+  // the multi-topic bake fills every category (bags, accessories, women…) with
+  // real gear on home — in live mode AND static mode alike
+  async function ensureBaked() {
+    if (bakedData) return bakedData;
+    try {
+      const res = await fetch('data/live.json');
+      if (res.ok) {
+        bakedData = await res.json();
+        if (bakedData && bakedData.items) registerListings(bakedData.items);
+      }
+    } catch (e) { /* no data file — live results still register as they arrive */ }
+    return bakedData;
+  }
+  let loadingFor = null;    // the query whose live fetch is in flight (drives the skeleton grid)
   async function fetchLive(q) {
+    q = q || ''; // undefined and '' are the same browse-mode key everywhere
     const seq = ++liveSeq;
+    loadingFor = q;
     $('#results-count').textContent = 'searching live shops…';
+    // browsing with an empty box still needs a server query — the house default
+    const netQ = q || 'nike windrunner';
     let payload = null;
     try {
-      const res = await fetch('/api/search?q=' + encodeURIComponent(q));
+      const res = await fetch('/api/search?q=' + encodeURIComponent(netQ));
       if (!res.ok) throw new Error('HTTP ' + res.status);
       payload = await res.json();
       // every shop failing returns an empty 200 — that's a miss
       if (!payload.items || !payload.items.length) payload = null;
+      if (payload) payload.q = q; // keyed by what the USER asked, not the network query
     } catch {
       payload = null;
     }
     if (!payload) {
       // static hosting: use the CI-refreshed data file (relative path — works under a subpath)
       try {
-        if (!bakedData) {
-          const res = await fetch('data/live.json');
-          if (res.ok) bakedData = await res.json();
-        }
+        await ensureBaked();
         if (bakedData && bakedData.items && bakedData.items.length) {
           // each baked item carries the topic it was fetched under ("bucket"),
           // so "soccer" matches soccer-topic items even when the title says "Predator"
@@ -176,7 +218,15 @@
   }
   function renderResults() {
     const q = state.query || '';
-    const isLive = !!(live && (!q || live.q === q));
+    $('#results-label').innerHTML = q ? 'Results for &ldquo;' + esc(q) + '&rdquo;' : 'Trending gear';
+    const isLive = !!(live && live.q === q);
+    // a real user search with its live fetch still in flight shows skeletons,
+    // never another query's results
+    if (!isLive && q && loadingFor === q) {
+      $('#results').innerHTML = '<div class="skel-card"></div>'.repeat(8);
+      $('#results-count').textContent = 'searching live shops…';
+      return;
+    }
     const pool = isLive
       ? live.items.map((it) => ({ id: it.id, name: it.title, size: it.size, img: it.img, now: it.price, color: '', cond: it.cond }))
       : WINDRUNNERS;
@@ -190,9 +240,19 @@
       (state.filters.Category === 'All' || w.name.toLowerCase().includes(state.filters.Category.toLowerCase().replace(/s$/, ''))) &&
       (state.cat === 'All' || !PRODUCTS[w.id] || (PRODUCTS[w.id].cats || []).includes(state.cat));
     let list = pool.filter((w) => passes(w, false));
+    // a category with no hits in the current results pulls from the full refreshed
+    // pool instead of showing an empty room
+    let catFallback = false;
+    if (!list.length && state.cat !== 'All' && bakedData && bakedData.items) {
+      const catPool = bakedData.items
+        .filter((it) => PRODUCTS[it.id] && (PRODUCTS[it.id].cats || []).includes(state.cat))
+        .map((it) => ({ id: it.id, name: it.title, size: it.size, img: it.img, now: it.price, color: '', cond: it.cond }));
+      list = catPool.filter((w) => passes(w, true));
+      catFallback = list.length > 0;
+    }
     // live shops unreachable and the query matches nothing bundled: show the whole
     // snapshot, honestly labeled, instead of an empty room
-    const snapshotFallback = !isLive && q && !list.length;
+    const snapshotFallback = !catFallback && !isLive && q && !list.length;
     if (snapshotFallback) list = pool.filter((w) => passes(w, true));
     if (state.sort === 'Price: low to high') list = [...list].sort((a, b) => a.now - b.now);
     if (state.sort === 'Price: high to low') list = [...list].sort((a, b) => b.now - a.now);
@@ -200,7 +260,10 @@
     const shown = list.length > 120 ? list.slice(0, 120) : list;
     $('#results').innerHTML = shown.map((w) => cardHtml(w.id, PRODUCTS[w.id] || w, true)).join('')
       || '<div class="empty-note">No matches — try clearing a filter.</div>';
-    if (isLive) {
+    if (catFallback) {
+      $('#results-count').textContent =
+        `${list.length} real ${state.cat} listings from today's refreshed pool`;
+    } else if (isLive) {
       const s = live.stats;
       const stores = Object.entries(s.perStore).map(([k, v]) => `${k} ${v}`).join(' · ');
       const when = live.baked
@@ -248,6 +311,28 @@
         <div class="look-bar"><span>${esc(cap)}</span><button class="heart" type="button" data-save="${esc(PICK_IDS[i])}" aria-pressed="${state.saved.has(PICK_IDS[i])}" aria-label="Save ${esc(cap)} look"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"/></svg></button></div>
       </div>`).join('');
   }
+  /* Shop = browse by sport or type; each tile runs that search live */
+  const SHOP_TILES = [
+    ['Soccer', 'soccer'], ['Basketball', 'basketball'], ['Baseball', 'baseball'],
+    ['Football', 'football jersey'], ['Hockey', 'hockey'], ['Running', 'running shoes'],
+    ['Tennis', 'tennis'], ['Golf', 'golf'], ['Ski & Snow', 'ski jacket'],
+    ['Jerseys', 'jersey'], ['Sneakers', 'sneakers'], ['Jackets', 'jacket'],
+  ];
+  function renderShopTiles() {
+    $('#shop-tiles').innerHTML = SHOP_TILES.map(([label, q]) => `
+      <button class="shop-tile" type="button" data-shopq="${esc(q)}">
+        <b>${esc(label)}</b><span>Shop real listings</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>`).join('');
+  }
+  document.addEventListener('click', (e) => {
+    const tile = e.target.closest('[data-shopq]');
+    if (!tile) return;
+    state.query = tile.dataset.shopq;
+    $('#search-input').value = state.query;
+    live = null;
+    show('discover');
+  });
   function renderCommunity() {
     const posts = [['av1', 'Maya', 'Kept my first race jersey in play — 3 owners strong.'], ['av2', 'Dre', 'This windbreaker has seen 2 cities and 40 games.'], ['av3', 'Sofia', 'Sold my old cleats in a day. Someone scores in them now.'], ['av4', 'Jo', 'Thrifted the whole fit. Total: $61.']];
     $('#community-grid').innerHTML = posts.map(([av, name, text]) => `
@@ -261,9 +346,9 @@
   }
 
   /* ---------- view router ---------- */
-  const VIEWS = ['home', 'discover', 'product', 'saved', 'tryon', 'looks', 'community', 'sell', 'how', 'profile'];
-  const SIDE_ACTIVE = { home: 'home', discover: 'discover', product: 'home', saved: 'saved', tryon: 'tryon', looks: 'looks', community: 'community', sell: 'sell', how: 'how', profile: 'home' };
-  const TAB_ACTIVE = { home: 'home', discover: 'discover', product: 'home', saved: 'saved', tryon: 'home', looks: 'home', community: 'home', sell: 'sell', how: 'home', profile: 'profile' };
+  const VIEWS = ['home', 'discover', 'shop', 'product', 'saved', 'tryon', 'looks', 'community', 'sell', 'how', 'profile'];
+  const SIDE_ACTIVE = { home: 'home', discover: 'discover', shop: 'shop', product: 'home', saved: 'saved', tryon: 'tryon', looks: 'looks', community: 'community', sell: 'sell', how: 'how', profile: 'home' };
+  const TAB_ACTIVE = { home: 'home', discover: 'discover', shop: 'discover', product: 'home', saved: 'saved', tryon: 'home', looks: 'home', community: 'home', sell: 'sell', how: 'home', profile: 'profile' };
   function show(name, opts) {
     for (const v of VIEWS) {
       const el = $('#view-' + v);
@@ -285,11 +370,13 @@
       if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
     });
     if (name === 'discover') {
-      if (!$('#search-input').value.trim()) $('#search-input').value = 'nike windrunner';
-      if (!state.query) state.query = 'nike windrunner';
-      renderResults();
+      // no auto-filled search: an empty box browses "Trending gear".
+      // fetchLive first — it synchronously marks the query in flight, so the
+      // render below shows skeletons instead of another query's cards
       if (!live || live.q !== state.query) fetchLive(state.query);
+      renderResults();
     }
+    if (name === 'shop') renderShopTiles();
     if (name === 'saved') renderSaved();
     if (name === 'profile') renderProfile();
     if (name === 'tryon') { renderTryonProducts(); updateTryon(); }
@@ -995,8 +1082,7 @@
   $('.search').addEventListener('click', () => $('#search-input').focus());
   $('#search-input').addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
-    state.query = e.target.value.trim() || 'nike windrunner';
-    $('#query-echo').textContent = state.query;
+    state.query = e.target.value.trim(); // empty box browses Trending gear
     live = null; // force a fresh live search for the new query
     show('discover');
   });
@@ -1020,4 +1106,6 @@
   renderTryonProducts();
   syncHearts();
   applyProfile();
+  ensureBaked();          // the full multi-topic pool backs home categories everywhere
+  fetchLive(state.query); // warm the live default for instant Discover
 })();
