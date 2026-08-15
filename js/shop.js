@@ -905,6 +905,7 @@
     if (gen.dataset.key) vtonDismissed.add(gen.dataset.key);
   });
   const HEIGHTS = ["5'6\" (168 cm)", "5'9\" (175 cm)", "6'0\" (183 cm)", "6'3\" (191 cm)"];
+  const MODEL_PHOTOS = ['img/model1.jpg', 'img/model.jpg', 'img/model3.jpg', 'img/model4.jpg'];
   const COLOR_WORDS = { green: '#1d5c3e', black: '#15181c', white: '#e8e8e4', red: '#b8302f', blue: '#2f5db8', navy: '#1d2f52', grey: '#7a8288', gray: '#7a8288', yellow: '#d8c22f', pink: '#c96f9a', purple: '#6a4a9c', orange: '#c9722f', brown: '#6d4c33', teal: '#2f8a80', burgundy: '#6b2231' };
   function colorsFrom(name) {
     const n = (name || '').toLowerCase();
@@ -919,14 +920,15 @@
     card.hidden = !gen && triedHistory.length < 2;
     if (card.hidden) return;
     $('#fl-thumb').src = gen || PRODUCTS[state.tryonProduct].img;
+    $('#fl-thumb').alt = gen ? 'AI look preview' : 'Product photo preview';
     $('#fl-dots').innerHTML = triedHistory.slice(0, 5).map((id) => `
       <button type="button" data-fldot="${esc(id)}" class="${id === state.tryonProduct ? 'on' : ''}"
         aria-label="Switch to ${esc((PRODUCTS[id] || {}).name || 'look').replace(/\n/g, ' ')}"></button>`).join('');
   }
   function updateTryon() {
-    // the stage model follows the chosen athlete
+    // every athlete has their OWN full-body model photo — switching is always visible
     const stageModel = $('#tryon-athlete');
-    stageModel.src = state.athlete <= 2 ? 'img/model.jpg' : 'media/athlete-f.jpg';
+    stageModel.src = MODEL_PHOTOS[state.athlete - 1] || MODEL_PHOTOS[1];
     stageModel.alt = `Athlete ${state.athlete} stand-in model, full body`;
     syncAthletes();
     // glass panel controls mirror the state
@@ -963,7 +965,7 @@
       if (p.was) was.innerHTML = '<span class="visually-hidden">was </span>' + money(p.was);
       if (p.off) off.textContent = p.off;
       $('#gl-cond-txt').textContent = p.real ? (p.cond || 'Pre-owned') + ', as listed by the seller' : 'Good condition';
-      $('#spec-cond').textContent = isNew ? 'New' : 'Good';
+      $('#spec-cond').textContent = p.cond || 'Pre-owned'; // echo the marketplace, never invent a grade
       $('#spec-fit').textContent = state.fit === 'Relaxed' ? 'Oversized' : state.fit;
       const colors = colorsFrom(p.name);
       $('#spec-color').textContent = colors.length ? colors[0] : '—';
@@ -1060,7 +1062,11 @@
     if (triedHistory.length < 2) { toast('Try on a second item first — then compare'); return; }
     openModal('compare', $('#gt-compare'));
   });
-  $('#th-bag') && $('#th-bag').addEventListener('click', () => $('#bag-btn').click());
+  $('#th-bag') && $('#th-bag').addEventListener('click', () => {
+    $('#bag-btn').click();
+    // mirror the expanded state on the visible button
+    $('#th-bag').setAttribute('aria-expanded', String(!$('#bag-drawer').hidden));
+  });
   const athStep = (d) => {
     state.athlete = ((state.athlete - 1 + d + 4) % 4) + 1;
     syncAthletes();
@@ -1072,6 +1078,8 @@
     state.athlete = 2; state.size = 'M'; state.fit = 'Relaxed'; state.height = HEIGHTS[2];
     tryonList = null; ++tryonSeq;
     $('#gl-search-input').value = '';
+    const sh = $('#sel-height'); if (sh) sh.firstChild.textContent = state.height;
+    const ss = $('#sel-size'); if (ss) ss.firstChild.textContent = state.size;
     $$('#gl-sports .gl-tile').forEach((x) => { x.classList.remove('on'); x.setAttribute('aria-pressed', 'false'); });
     state.tryonProduct = PICK_IDS[0];
     renderTryonProducts();
@@ -1172,7 +1180,16 @@
     setTimeout(() => {
       d.hidden = true;
       drawerClosing = false;
-      $('#bag-btn').focus({ preventScroll: true });
+      // in try-on mode the app topbar (and its bag button) is hidden — return
+      // keyboard focus to the visible bag button instead
+      const bagBtn = $('#bag-btn');
+      const thBag = $('#th-bag');
+      if (bagBtn.offsetParent === null && thBag) {
+        thBag.setAttribute('aria-expanded', 'false');
+        thBag.focus({ preventScroll: true });
+      } else {
+        bagBtn.focus({ preventScroll: true });
+      }
     }, REDUCED ? 0 : 250);
   }
   function renderBag() {

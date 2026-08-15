@@ -526,7 +526,7 @@ body.tryon-mode .topbar { display: none; }
   padding: 7px 12px; border-radius: 99px;
 }
 .gl-pill svg { width: 13px; height: 13px; stroke: var(--lime); fill: none; stroke-width: 2; }
-.gl-pill.blue { background: #3D7CB8; color: #fff; }
+.gl-pill.blue { background: #366FA5; color: #fff; }
 .gl-pill.dark { background: rgba(255, 255, 255, 0.07); border: 1px solid var(--line); color: var(--text); }
 .gl-pill.lime { background: rgba(211, 234, 44, 0.14); color: var(--lime); }
 .gl-prod-title { margin: 14px 0 2px; font-size: 21px; font-weight: 700; line-height: 1.25; }
@@ -535,24 +535,27 @@ body.tryon-mode .topbar { display: none; }
 .gl-pricerow s { color: var(--text-2); font-size: 15px; }
 .gl-condline { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; font-size: 13px; }
 .gl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lime); }
-.gl-specs { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 10px; }
+.gl-specs { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 0; }
+.gl-specs > div { padding: 0 12px; }
+.gl-specs > div:first-child { padding-left: 0; }
+.gl-specs > div + div { border-left: 1px solid rgba(255, 255, 255, 0.1); }
 .gl-specs .gl-label { display: block; margin: 0 0 5px; }
 .gl-specs b { display: block; }
+.gl-info { width: 14px; height: 14px; stroke: var(--text-2); fill: none; stroke-width: 2; margin-left: 2px; }
 .glass-stage #gl-sizes .gl-chip { padding: 10px 13px; }
 .gl-specs b { font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+/* the reference's protection block is borderless — shield + copy between dividers */
 .gl-protect {
   display: flex; gap: 12px; align-items: flex-start;
-  margin-top: 16px; padding: 14px;
-  background: rgba(211, 234, 44, 0.06);
-  border: 1px solid rgba(211, 234, 44, 0.2);
-  border-radius: 14px;
+  margin: 2px 0;
 }
 .gl-protect svg { flex: none; width: 20px; height: 20px; stroke: var(--lime); fill: none; stroke-width: 2; margin-top: 1px; }
 .gl-protect b { display: block; font-size: 12.5px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 3px; }
 .gl-protect span { font-size: 12.5px; color: var(--text-2); line-height: 1.45; }
 .gl-wearblock { margin-top: 16px; }
 .gl-wearblock p { margin: 4px 0 6px; font-size: 13px; color: var(--text); line-height: 1.5; }
-.gl-viewlink { color: var(--lime); font-size: 12.5px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.gl-viewlink { color: #DDE4EA; font-size: 12.5px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.gl-viewlink:hover { color: #fff; }
 .gl-viewlink:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .gl-colorrow[hidden], .gl-pill[hidden] { display: none; } /* hidden must beat the display overrides */
 .gl-colorrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }

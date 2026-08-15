@@ -383,10 +383,10 @@
           <a href="#" data-nav="home" aria-label="Second Look home"><span>SECOND</span><span>LOOK<svg class="swoosh" viewBox="0 0 34 14" aria-hidden="true"><path d="M2 4 L30 4 L24 12 L2 12 Z" fill="#D3EA2C"/></svg></span></a>
           <p class="gt-tag">Give gear<br><em>a second game.</em></p>
         </div>
-        <div class="gt-seg" role="tablist" aria-label="Try-on sections">
-          <button class="gt-tab on" type="button" role="tab" aria-selected="true" id="gt-tryon">Try On</button>
-          <button class="gt-tab" type="button" role="tab" aria-selected="false" id="gt-details">Details</button>
-          <button class="gt-tab" type="button" role="tab" aria-selected="false" id="gt-compare">Compare</button>
+        <div class="gt-seg" role="group" aria-label="Try-on sections">
+          <button class="gt-tab on" type="button" aria-current="true" id="gt-tryon">Try On</button>
+          <button class="gt-tab" type="button" id="gt-details">Details</button>
+          <button class="gt-tab" type="button" id="gt-compare">Compare</button>
         </div>
         <div class="gt-icons">
           <button class="icon-btn heart" type="button" id="th-heart" data-save="r2" aria-pressed="false" aria-label="Save this item">
@@ -478,17 +478,19 @@
             <s id="gl-prod-was" hidden><span class="visually-hidden">was </span>$89</s>
             <span class="gl-pill lime" id="gl-off-chip" hidden>46% off</span>
           </div>
-          <p class="gl-condline"><span class="gl-dot" aria-hidden="true"></span><span id="gl-cond-txt">Good condition</span></p>
+          <p class="gl-condline"><span class="gl-dot" aria-hidden="true"></span><span id="gl-cond-txt">Good condition</span><svg class="gl-info" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg></p>
           <div class="gl-divider"></div>
           <div class="gl-specs">
             <div><span class="gl-label">Condition</span><b id="spec-cond">Good</b></div>
             <div><span class="gl-label">Fit</span><b id="spec-fit">Regular</b></div>
             <div><span class="gl-label">Color</span><b id="spec-color">&mdash;</b></div>
           </div>
+          <div class="gl-divider"></div>
           <div class="gl-protect">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
             <div><b id="gl-protect-title">Buyer protection</b><span id="gl-protect-sub">Checkout completes on Poshmark.</span></div>
           </div>
+          <div class="gl-divider"></div>
           <div class="gl-wearblock">
             <span class="gl-label">Wear details</span>
             <p id="gl-wear">Photos and wear notes are on the original listing.</p>

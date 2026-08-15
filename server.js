@@ -324,7 +324,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (u.pathname === '/api/vton') {
       const g = (u.searchParams.get('g') || '').slice(0, 500);
-      const person = ['3', '4'].includes(u.searchParams.get('p')) ? 'media/athlete-f.jpg' : 'img/model.jpg';
+      const person = { 1: 'img/model1.jpg', 2: 'img/model.jpg', 3: 'img/model3.jpg', 4: 'img/model4.jpg' }[u.searchParams.get('p')] || 'img/model.jpg';
       const key = person + '|' + g;
       const hit = vtonCache.get(key);
       if (hit) { res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-cache' }); return res.end(hit); }
