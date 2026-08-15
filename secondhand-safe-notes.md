@@ -1,6 +1,16 @@
 # SecondHand Safe — Project Notes
 
-Living document. Updated as the build evolves. Last updated: 2026-08-15, afternoon (v8 — live shops, real sellers, mobile hardening).
+Living document. Updated as the build evolves. Last updated: 2026-08-15, evening (v8 deployed — the site is public).
+
+## Deployed
+
+**Live at https://goofturtles.github.io/second-look/** — repo: https://github.com/Goofturtles/second-look (public, GitHub Pages from main).
+
+GitHub Pages can't run the Node server, so the deployed site uses a third data tier between "live" and "snapshot": a GitHub Action re-fetches real listings from Poshmark and SidelineSwap four times a day and commits them as `data/live.json`. The page detects there's no server, loads that file, and labels the results honestly — "68 of 68 real listings · $23–$300, median $65 · Poshmark 48 · SidelineSwap 20 · refreshed Aug 15, 2:20 PM" — saying "real listings … refreshed [time]" rather than "live." Searches on the deployed site filter that refreshed pool by title; a search that matches nothing falls back to the bundled snapshot, labeled as such. A `no-referrer` meta tag keeps the shops' CDN photos loading from the public origin.
+
+Verified on the public URL before sharing: 68 cards with working CDN images, product pages with real sellers and purchase links, red hearts, bag, and zero broken images.
+
+Running `node server.js` locally (or connecting the repo to Render's free tier — `render.yaml` is included) upgrades the same code to true live search, where any query hits the shops in real time.
 
 ## What changed in v8 (live shops + the honesty pass)
 
