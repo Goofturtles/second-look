@@ -1,0 +1,229 @@
+/* ============================================================
+   glass.css — SECOND LOOK Try-On: liquid-glass material layer
+   Dark Vision-Pro-style frosted panels over full-bleed photo.
+   Material, inner spacing, typography, and states ONLY.
+   Layout/positioning of panels lives elsewhere — never here.
+   ============================================================ */
+
+/* ---------- Panel: the frosted surface ---------- */
+.gl-panel {
+  padding: 22px;
+  background: rgba(9, 16, 24, 0.55);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 24px 60px rgba(0, 0, 0, 0.5);
+  color: var(--text, #F2F5F7);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .gl-panel { background: rgba(9, 16, 24, 0.92); }
+}
+
+/* ---------- Typography ---------- */
+.gl-title {
+  font-size: 13px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text, #F2F5F7);
+}
+
+.gl-label {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-2, #97A1AB);
+  margin: 18px 0 10px;
+}
+
+.gl-big { font-size: 34px; font-weight: 800; line-height: 1.25; color: var(--text, #F2F5F7); }
+.gl-big small { font-size: 13px; font-weight: 500; color: var(--text-2, #97A1AB); margin-left: 8px; }
+
+.gl-price { font-size: 26px; font-weight: 800; color: var(--text, #F2F5F7); }
+
+/* ---------- Chips ---------- */
+.gl-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.gl-chip {
+  appearance: none; font: inherit; cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 13px; font-weight: 600; line-height: 1.25;
+  color: var(--text, #F2F5F7);
+  transition: border-color 150ms ease, color 150ms ease;
+}
+.gl-chip:hover { border-color: var(--lime, #D3EA2C); }
+.gl-chip.on { border-color: var(--lime, #D3EA2C); color: var(--lime, #D3EA2C); }
+
+/* ---------- Icon tiles ---------- */
+.gl-tiles { display: flex; gap: 10px; padding-bottom: 24px; }
+
+.gl-tile {
+  appearance: none; font: inherit; cursor: pointer;
+  position: relative; /* anchors its own label; not panel layout */
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  color: var(--text, #F2F5F7);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.gl-tile svg { width: 22px; height: 22px; stroke: currentColor; }
+.gl-tile span {
+  position: absolute;
+  top: calc(100% + 7px); left: 50%;
+  transform: translateX(-50%); /* static centering, not motion */
+  font-size: 11px; line-height: 1.25; white-space: nowrap;
+  color: var(--text, #F2F5F7);
+}
+.gl-tile:hover { border-color: var(--lime, #D3EA2C); }
+.gl-tile.on {
+  background: #F2F5F7;
+  border-color: #F2F5F7;
+  color: #040D16; /* dark icon on light tile, per mock */
+}
+
+/* ---------- Range slider ---------- */
+.gl-slider {
+  -webkit-appearance: none; appearance: none;
+  height: 16px; background: transparent; cursor: pointer;
+}
+.gl-slider::-webkit-slider-runnable-track {
+  height: 2px; border-radius: 1px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.gl-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px; margin-top: -7px;
+  border: none; border-radius: 50%;
+  background: var(--lime, #D3EA2C);
+  box-shadow: 0 0 12px rgba(211, 234, 44, 0.45);
+}
+.gl-slider::-moz-range-track {
+  height: 2px; border-radius: 1px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.gl-slider::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border: none; border-radius: 50%;
+  background: var(--lime, #D3EA2C);
+  box-shadow: 0 0 12px rgba(211, 234, 44, 0.45);
+}
+
+/* ---------- Avatars ---------- */
+.gl-avatars { display: flex; align-items: center; gap: 10px; }
+
+.gl-av {
+  appearance: none; cursor: pointer; padding: 0;
+  width: 52px; height: 52px;
+  border: 2px solid transparent;
+  border-radius: 50%; /* intentional round crop for avatar photos */
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  transition: border-color 150ms ease;
+}
+.gl-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.gl-av.on { border-color: var(--lime, #D3EA2C); }
+
+/* ---------- Product card bits ---------- */
+.gl-card-thumb {
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+.gl-card-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+/* ---------- CTA pill ---------- */
+.gl-cta {
+  appearance: none; cursor: pointer;
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--lime, #D3EA2C);
+  color: var(--lime-ink, #131A04);
+  border: none; border-radius: 999px;
+  padding: 16px 22px;
+  font: inherit; font-size: 15px; font-weight: 700; line-height: 1.25;
+  transition: filter 150ms ease;
+}
+.gl-cta svg { width: 18px; height: 18px; stroke: currentColor; }
+.gl-cta:hover { filter: brightness(1.05); }
+
+/* ---------- Utility note row ---------- */
+.gl-note {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-2, #97A1AB);
+}
+.gl-note svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* ---------- Search field ---------- */
+.gl-search {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: 999px;
+  padding: 12px 18px;
+  transition: border-color 150ms ease;
+}
+.gl-search:focus-within { border-color: var(--lime, #D3EA2C); }
+.gl-search svg { width: 18px; height: 18px; color: var(--text-2, #97A1AB); flex-shrink: 0; }
+.gl-search input {
+  flex: 1; min-width: 0;
+  background: transparent; border: none;
+  outline: none; /* wrapper's focus-within ring signals focus */
+  font: inherit; font-size: 14px;
+  color: var(--text, #F2F5F7);
+}
+.gl-search input::placeholder { color: var(--text-2, #97A1AB); }
+
+/* ---------- Results strip ---------- */
+.gl-results {
+  display: flex; gap: 10px;
+  overflow-x: auto;
+  padding: 4px 0;
+  scrollbar-width: none;
+}
+.gl-results::-webkit-scrollbar { display: none; }
+
+.gl-thumb {
+  appearance: none; cursor: pointer;
+  flex: 0 0 auto;
+  width: 72px; height: 72px; padding: 0;
+  border-radius: 12px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  transition: transform 150ms ease, border-color 150ms ease;
+}
+.gl-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gl-thumb:hover { transform: translateY(-2px); }
+.gl-thumb.selected { border: 2px solid var(--lime, #D3EA2C); }
+
+/* ---------- Divider ---------- */
+.gl-divider {
+  border: none; height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 18px 0;
+}
+
+/* ---------- Focus rings (every interactive class) ---------- */
+.gl-chip:focus-visible,
+.gl-tile:focus-visible,
+.gl-av:focus-visible,
+.gl-cta:focus-visible,
+.gl-thumb:focus-visible,
+.gl-slider:focus-visible {
+  outline: 2px solid var(--lime, #D3EA2C);
+  outline-offset: 2px;
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .gl-chip, .gl-tile, .gl-av, .gl-cta, .gl-thumb, .gl-search { transition: none; }
+  .gl-thumb:hover { transform: none; } /* label-centering transforms stay */
+}

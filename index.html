@@ -10,8 +10,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=11">
-<link rel="stylesheet" href="css/v7.css?v=11">
+<link rel="stylesheet" href="css/app.css?v=12">
+<link rel="stylesheet" href="css/v7.css?v=12">
+<link rel="stylesheet" href="css/glass.css?v=1">
 </head>
 <body>
 
@@ -373,31 +374,77 @@
       <div class="empty-note" id="saved-empty">Nothing saved yet — tap the heart on any item.</div>
     </section>
 
-    <!-- ================= TRY-ON VIEW ================= -->
+    <!-- ================= TRY-ON VIEW (liquid-glass stage) ================= -->
     <section class="view" id="view-tryon" hidden>
-      <div class="page-head"><h1>Try-On</h1><p class="page-sub">Build a look, then see it on you.</p></div>
-      <div class="tryon-grid">
-        <div class="tryon-stage" id="tryon-stage">
-          <img id="tryon-athlete" src="img/model.jpg" alt="Studio model, full body">
-          <img class="tryon-avatar" id="tryon-avatar" src="img/av2.jpg" alt="Selected athlete">
-          <span class="sim-tag" aria-hidden="true">Simulation</span>
-          <img id="tryon-product" src="img/big-reebok.jpg" alt="Selected gear — drag to place">
-          <button class="tryon-gen" id="tryon-gen" type="button" hidden aria-label="AI-generated photo of the model wearing the selected gear — press to hide">
-            <img id="tryon-gen-img" alt="">
-            <span class="gen-tag" aria-hidden="true">AI GENERATED · TAP TO HIDE</span>
-          </button>
-          <span class="gen-status" id="gen-status" role="status" hidden></span>
-          <p class="tryon-caption" id="tryon-caption">Athlete 2 · Vintage Reebok Windbreaker · M · Relaxed</p>
-        </div>
-        <div class="tryon-side">
-          <p class="rail-label">PICK GEAR</p>
-          <div class="tryon-products" id="tryon-products"></div>
-          <div class="size-row">
-            <label for="tryon-size">SIZE</label>
-            <input type="range" id="tryon-size" min="24" max="64" value="42">
+      <h1 class="visually-hidden">Try-On</h1>
+      <div class="glass-stage" id="tryon-stage">
+        <img id="tryon-athlete" src="img/model.jpg" alt="Studio model, full body">
+        <span class="sim-tag" aria-hidden="true">Simulation</span>
+        <img id="tryon-product" src="img/big-reebok.jpg" alt="Selected gear — drag to place">
+        <button class="tryon-gen" id="tryon-gen" type="button" hidden aria-label="AI-generated photo of the model wearing the selected gear — press to hide">
+          <img id="tryon-gen-img" alt="">
+          <span class="gen-tag" aria-hidden="true">AI GENERATED · TAP TO HIDE</span>
+        </button>
+        <span class="gen-status" id="gen-status" role="status" hidden></span>
+        <p class="tryon-caption visually-hidden" id="tryon-caption">Athlete 2 · Vintage Reebok Windbreaker · M · Relaxed</p>
+
+        <!-- left glass panel: who's wearing it, and how -->
+        <div class="gl-panel glass-left">
+          <p class="gl-title">Try On</p>
+          <p class="gl-label" id="gl-ath-label">Athlete</p>
+          <div class="gl-avatars" role="group" aria-labelledby="gl-ath-label">
+            <button class="gl-av athlete" type="button" aria-pressed="false" aria-label="Athlete 1"><img src="img/av1.jpg" alt=""></button>
+            <button class="gl-av athlete" type="button" aria-pressed="true" aria-label="Athlete 2"><img src="img/av2.jpg" alt="" id="tryon-avatar"></button>
+            <button class="gl-av athlete" type="button" aria-pressed="false" aria-label="Athlete 3"><img src="img/av3.jpg" alt=""></button>
+            <button class="gl-av athlete" type="button" aria-pressed="false" aria-label="Athlete 4"><img src="img/av4.jpg" alt=""></button>
           </div>
-          <p class="tryon-hint">Drag the gear onto the model. Slide to resize.</p>
-          <button class="btn-lime btn-wide" id="tryon-save" type="button">Save this look</button>
+          <p class="gl-label"><label for="gl-height">Height</label></p>
+          <p class="gl-big" id="gl-height-big">6&rsquo;0&rdquo;<small id="gl-height-cm">183 cm</small></p>
+          <input class="gl-slider" type="range" id="gl-height" min="0" max="3" step="1" value="2" aria-label="Height">
+          <p class="gl-label" id="gl-size-label">Size</p>
+          <div class="gl-chips" role="group" aria-labelledby="gl-size-label" id="gl-sizes">
+            <button class="gl-chip" type="button" aria-pressed="false">S</button>
+            <button class="gl-chip on" type="button" aria-pressed="true">M</button>
+            <button class="gl-chip" type="button" aria-pressed="false">L</button>
+            <button class="gl-chip" type="button" aria-pressed="false">XL</button>
+          </div>
+          <p class="gl-label" id="gl-fit-label">Fit preference</p>
+          <div class="gl-chips" role="group" aria-labelledby="gl-fit-label" id="gl-fits">
+            <button class="gl-chip" type="button" aria-pressed="false">Fitted</button>
+            <button class="gl-chip" type="button" aria-pressed="false">Regular</button>
+            <button class="gl-chip on" type="button" aria-pressed="true">Relaxed</button>
+          </div>
+          <p class="gl-label" id="gl-sport-label">Sport / Activity</p>
+          <div class="gl-tiles" role="group" aria-labelledby="gl-sport-label" id="gl-sports">
+            <div class="gl-tile-wrap"><button class="gl-tile" type="button" data-sportq="basketball" aria-pressed="false" aria-label="Basketball"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 2.5 3 15 0 18M12 3c-3 2.5-3 15 0 18"/></svg></button><span>Basketball</span></div>
+            <div class="gl-tile-wrap"><button class="gl-tile" type="button" data-sportq="gym training" aria-pressed="false" aria-label="Training"><svg viewBox="0 0 24 24"><path d="M3 12h3M18 12h3M7 8v8M17 8v8M7 12h10"/></svg></button><span>Training</span></div>
+            <div class="gl-tile-wrap"><button class="gl-tile" type="button" data-sportq="running shoes" aria-pressed="false" aria-label="Running"><svg viewBox="0 0 24 24"><path d="M4 16c4 0 5-6 9-6 2 0 2 2 4 2h3v3a2 2 0 0 1-2 2H4z"/></svg></button><span>Running</span></div>
+            <div class="gl-tile-wrap"><button class="gl-tile" type="button" data-sportq="baseball cap" aria-pressed="false" aria-label="Lifestyle"><svg viewBox="0 0 24 24"><path d="M5 14a7 7 0 0 1 14 0M5 14h14M5 14c-1.5 0-2 1-2 2h18c0-1-.5-2-2-2"/></svg></button><span>Lifestyle</span></div>
+          </div>
+        </div>
+
+        <!-- right glass panel: the piece being tried, searchable -->
+        <div class="gl-panel glass-right">
+          <div class="gl-card-head">
+            <p class="gl-title" id="gl-prod-name">Vintage Reebok Windbreaker</p>
+            <button class="heart" type="button" id="pd-heart-tryon" data-save="r2" aria-pressed="false" aria-label="Save this item">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"/></svg>
+            </button>
+          </div>
+          <div class="gl-card-thumb"><img id="gl-prod-img" src="img/big-reebok.jpg" alt=""></div>
+          <p class="gl-price" id="gl-prod-price">$68</p>
+          <p class="gl-note" id="gl-prod-meta">Pre-owned · via Poshmark</p>
+          <div class="gl-divider"></div>
+          <label class="gl-label" for="gl-search-input">Try anything from the shops</label>
+          <div class="gl-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input id="gl-search-input" type="search" enterkeyhint="search" maxlength="80" placeholder="Search gear to try on&hellip;" autocomplete="off">
+          </div>
+          <div class="gl-results" id="gl-results" role="group" aria-label="Try-on search results"></div>
+          <button class="gl-cta" id="add-bag-tryon" type="button">Add to Bag
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <button class="btn-lime btn-wide gl-save" id="tryon-save" type="button">Save this look</button>
+          <p class="gl-note"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 10h3l2 3v4h-5z"/></svg>Purchase completes on the original shop</p>
         </div>
       </div>
     </section>

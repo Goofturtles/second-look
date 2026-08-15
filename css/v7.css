@@ -468,10 +468,59 @@ button.d-link:hover { text-decoration: underline; }
 @keyframes gen-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .tryon-gen { animation: none; } }
 
+/* ---------- liquid-glass try-on: full-bleed stage, floating panels ---------- */
+.glass-stage {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  min-height: 80vh;
+  background: #060d13;
+}
+.glass-stage > #tryon-athlete {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center 8%;
+  opacity: 1; filter: none;
+}
+.glass-left {
+  position: absolute; left: 22px; top: 22px; bottom: 22px;
+  width: 300px; z-index: 5;
+  overflow-y: auto; scrollbar-width: none;
+}
+.glass-left::-webkit-scrollbar { display: none; }
+.glass-right {
+  position: absolute; right: 22px; top: 22px;
+  width: 320px; z-index: 5;
+  max-height: calc(100% - 44px);
+  overflow-y: auto; scrollbar-width: none;
+}
+.glass-right::-webkit-scrollbar { display: none; }
+.gl-tile-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.gl-tile-wrap > span { font-size: 11px; color: var(--text-2); }
+.gl-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.gl-card-head .gl-title { max-width: 220px; }
+.gl-cta { margin-top: 16px; }
+.gl-save { margin-top: 10px; }
+.glass-stage .sim-tag { top: auto; bottom: 18px; right: auto; left: 50%; transform: translateX(-50%); z-index: 4; }
+@media (max-width: 1024px) {
+  .glass-stage { display: flex; flex-direction: column; min-height: 0; gap: 14px; padding-bottom: 14px; }
+  .glass-stage > #tryon-athlete { position: relative; inset: auto; height: 52vh; order: 0; }
+  .glass-left, .glass-right {
+    position: static; width: auto; max-height: none;
+    margin: 0 14px; overflow: visible;
+  }
+  .glass-left { order: 2; }
+  .glass-right { order: 1; }
+  .tryon-gen { height: 52vh; bottom: auto; }
+  .glass-stage .sim-tag { top: calc(52vh - 40px); bottom: auto; }
+  #tryon-product { top: 26vh; }
+}
+
 /* live status while the AI dresses the model — the wait must never look dead */
 .gen-status[hidden] { display: none; }
 .gen-status {
-  position: absolute; left: 14px; top: 14px; z-index: 4;
+  position: absolute; left: 50%; top: 16px; transform: translateX(-50%); z-index: 6;
+  white-space: nowrap;
   display: inline-flex; align-items: center; gap: 8px;
   background: rgba(9, 19, 27, 0.92);
   border: 1px solid rgba(211, 234, 44, 0.5);

@@ -302,11 +302,51 @@
       : '<div class="empty-note">Nothing saved yet.</div>';
     $('#profile-viewed').innerHTML = state.viewed.slice(0, 4).map((id) => cardHtml(id, PRODUCTS[id], true)).join('');
   }
+  let tryonList = null; // ids currently shown in the try-on search row
   function renderTryonProducts() {
-    $('#tryon-products').innerHTML = PICK_IDS.map((id) => `
-      <button class="tryon-pick ${state.tryonProduct === id ? 'selected' : ''}" type="button" data-tryon="${id}" aria-pressed="${state.tryonProduct === id}">
-        <img src="${esc(PRODUCTS[id].img)}" alt="">${esc(PRODUCTS[id].name.split('\n')[0])}
-      </button>`).join('');
+    const box = $('#gl-results');
+    if (!box) return;
+    const ids = (tryonList && tryonList.length ? tryonList : PICK_IDS).filter((id) => PRODUCTS[id]);
+    box.innerHTML = ids.map((id) => `
+      <button class="gl-thumb ${state.tryonProduct === id ? 'selected' : ''}" type="button" data-tryon="${esc(id)}"
+        aria-pressed="${state.tryonProduct === id}" aria-label="Try on ${esc(PRODUCTS[id].name.replace(/\n/g, ' '))}">
+        <img src="${esc(PRODUCTS[id].img)}" alt="" loading="lazy">
+      </button>`).join('')
+      || '<p class="gl-note">No matches — try another search.</p>';
+  }
+  // search ANY listing straight from the try-on panel: live shops first, baked pool as fallback
+  let tryonSeq = 0;
+  async function tryonSearch(q) {
+    q = (q || '').trim();
+    if (!q) { tryonList = null; renderTryonProducts(); return; }
+    const seq = ++tryonSeq;
+    const box = $('#gl-results');
+    if (box) box.innerHTML = '<p class="gl-note">Searching the shops&hellip;</p>';
+    let items = [];
+    try {
+      const res = await fetch('/api/search?q=' + encodeURIComponent(q));
+      if (res.ok) {
+        const payload = await res.json();
+        if (payload.items && payload.items.length) items = payload.items;
+      }
+    } catch (e) { /* static hosting — fall through to the baked pool */ }
+    if (!items.length) {
+      await ensureBaked();
+      if (bakedData && bakedData.items) {
+        const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+        items = bakedData.items.filter((it) =>
+          tokens.every((t) => it.title.toLowerCase().includes(t) || (it.bucket || '').includes(t)));
+      }
+    }
+    if (seq !== tryonSeq) return;
+    registerListings(items.slice(0, 12));
+    tryonList = items.slice(0, 12).map((it) => it.id);
+    renderTryonProducts();
+    if (tryonList.length) {
+      state.tryonProduct = tryonList[0];
+      renderTryonProducts();
+      updateTryon();
+    }
   }
   function renderLooks() {
     // full-resolution photography — the board crops upscale badly at this size
@@ -608,12 +648,19 @@
   }));
 
   /* ---------- try-on ---------- */
-  $$('.athlete').forEach((a, i) => a.addEventListener('click', () => {
-    state.athlete = i + 1;
-    $$('.athlete').forEach((x, j) => {
-      x.classList.toggle('selected', j === i);
-      x.setAttribute('aria-pressed', String(j === i));
+  // athletes appear in TWO groups (home rail + glass panel) — index within the group
+  function syncAthletes() {
+    $$('.athlete').forEach((x) => {
+      const n = [...x.parentElement.querySelectorAll('.athlete')].indexOf(x) + 1;
+      const on = n === state.athlete;
+      x.classList.toggle('selected', on);
+      x.classList.toggle('on', on);
+      x.setAttribute('aria-pressed', String(on));
     });
+  }
+  $$('.athlete').forEach((a) => a.addEventListener('click', () => {
+    state.athlete = [...a.parentElement.querySelectorAll('.athlete')].indexOf(a) + 1;
+    syncAthletes();
     updateTryon();
   }));
   $$('.fits .fit').forEach((f) => f.addEventListener('click', () => {
@@ -855,14 +902,42 @@
     gen.hidden = true;
     if (gen.dataset.key) vtonDismissed.add(gen.dataset.key);
   });
+  const HEIGHTS = ["5'6\" (168 cm)", "5'9\" (175 cm)", "6'0\" (183 cm)", "6'3\" (191 cm)"];
   function updateTryon() {
-    const av = $('#tryon-avatar'); if (!av) return;
-    av.src = `img/av${state.athlete}.jpg`;
     // the stage model follows the chosen athlete
     const stageModel = $('#tryon-athlete');
     stageModel.src = state.athlete <= 2 ? 'img/model.jpg' : 'media/athlete-f.jpg';
     stageModel.alt = `Athlete ${state.athlete} stand-in model, full body`;
-    applyGarment(PRODUCTS[state.tryonProduct]);
+    syncAthletes();
+    // glass panel controls mirror the state
+    const hIdx = Math.max(0, HEIGHTS.indexOf(state.height));
+    const hs = $('#gl-height');
+    if (hs) {
+      hs.value = hIdx;
+      const [ft, cm] = HEIGHTS[hIdx].split(' (');
+      $('#gl-height-big').innerHTML = esc(ft) + '<small id="gl-height-cm">' + esc(cm.replace(')', '')) + '</small>';
+    }
+    $$('#gl-sizes .gl-chip').forEach((c) => {
+      const on = c.textContent.trim() === state.size;
+      c.classList.toggle('on', on);
+      c.setAttribute('aria-pressed', String(on));
+    });
+    $$('#gl-fits .gl-chip').forEach((c) => {
+      const on = c.textContent.trim() === state.fit;
+      c.classList.toggle('on', on);
+      c.setAttribute('aria-pressed', String(on));
+    });
+    // the glass product card shows what's being tried
+    const p = PRODUCTS[state.tryonProduct];
+    if ($('#gl-prod-name')) {
+      $('#gl-prod-name').textContent = p.name.replace(/\n/g, ' ');
+      $('#gl-prod-img').src = p.img;
+      $('#gl-prod-price').textContent = money(p.now);
+      $('#gl-prod-meta').textContent = (p.cond || 'Pre-owned') + (p.real ? ' · via ' + (p.store || REAL.store) : ' · community item');
+      const h = $('#pd-heart-tryon');
+      if (h) { h.dataset.save = state.tryonProduct; syncHearts(); }
+    }
+    applyGarment(p);
   }
 
   /* draggable + resizable garment on the model */
@@ -889,7 +964,8 @@
     const end = () => { drag = null; garment.classList.remove('dragging'); };
     garment.addEventListener('pointerup', end);
     garment.addEventListener('pointercancel', end);
-    $('#tryon-size').addEventListener('input', (e) => {
+    const sizeSlider = $('#tryon-size'); // retired by the glass panel — size chips resize now
+    if (sizeSlider) sizeSlider.addEventListener('input', (e) => {
       garment.style.width = e.target.value + '%';
     });
   })();
@@ -901,6 +977,47 @@
     updateTryon();
   });
   $('#see-btn').addEventListener('click', () => show('tryon'));
+  /* glass panel controls */
+  const glHeight = $('#gl-height');
+  if (glHeight) glHeight.addEventListener('input', (e) => {
+    state.height = HEIGHTS[Number(e.target.value)] || HEIGHTS[2];
+    const sel = $('#sel-height');
+    if (sel) sel.firstChild.textContent = state.height; // keep the home rail in step
+    updateTryon();
+  });
+  $$('#gl-sizes .gl-chip').forEach((c) => c.addEventListener('click', () => {
+    state.size = c.textContent.trim();
+    const sel = $('#sel-size');
+    if (sel) sel.firstChild.textContent = state.size;
+    updateTryon();
+  }));
+  $$('#gl-fits .gl-chip').forEach((c) => c.addEventListener('click', () => {
+    state.fit = c.textContent.trim();
+    updateTryon();
+  }));
+  $$('#gl-sports .gl-tile').forEach((t) => t.addEventListener('click', () => {
+    $$('#gl-sports .gl-tile').forEach((x) => {
+      const on = x === t;
+      x.classList.toggle('on', on);
+      x.setAttribute('aria-pressed', String(on));
+    });
+    const q = t.dataset.sportq;
+    const si = $('#gl-search-input');
+    if (si) si.value = q;
+    tryonSearch(q);
+  }));
+  const glSearch = $('#gl-search-input');
+  if (glSearch) glSearch.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    tryonSearch(e.target.value);
+  });
+  const addBagTryon = $('#add-bag-tryon');
+  if (addBagTryon) addBagTryon.addEventListener('click', (e) => {
+    state.bag.push(state.tryonProduct);
+    renderBag();
+    flyToBag(e.currentTarget);
+    toast(`Added to bag — ${PRODUCTS[state.tryonProduct].name.replace(/\n/g, ' ')} · ${money(PRODUCTS[state.tryonProduct].now)}`);
+  });
   $('#tryon-save').addEventListener('click', () => {
     state.saved.add(state.tryonProduct);
     persistSaved();
