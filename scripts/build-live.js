@@ -33,10 +33,6 @@ const TOPICS = [
   }
   const items = [...byId.values()];
   const out = path.join(__dirname, '..', 'data', 'live.json');
-  if (!items.length) {
-    console.error('no items fetched — keeping the previous data file');
-    process.exit(0); // an upstream outage must not wipe the deployed data
-  }
   // a bad run must not quietly shrink the public pool by half or more
   let prevTotal = 0, prevFetchedAt = 0;
   try {
@@ -58,6 +54,12 @@ const TOPICS = [
     }
     process.exit(0);
   };
+
+  // every shop failing at once is the likeliest real outage (a datacenter runner IP
+  // getting blocked by all three), so it must escalate like any other rejection
+  // rather than exit green — apiSearch settles rather than rejects, so nothing
+  // upstream of here throws.
+  if (!items.length) keepPrevious('no items fetched — every shop failed');
 
   if (prevTotal && items.length < prevTotal / 2) {
     keepPrevious('degraded fetch (' + items.length + ' vs previous ' + prevTotal + ')');
