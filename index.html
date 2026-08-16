@@ -436,9 +436,6 @@
             </div>
             <button class="gl-arrow" type="button" id="ath-next" aria-label="Next athlete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
           </div>
-          <p class="gl-label"><label for="gl-height">Height</label></p>
-          <p class="gl-big" id="gl-height-big">6&rsquo;0&rdquo;<small id="gl-height-cm">183 cm</small></p>
-          <input class="gl-slider" type="range" id="gl-height" min="0" max="3" step="1" value="2" aria-label="Height">
           <p class="gl-label" id="gl-size-label">Size</p>
           <div class="gl-chips" role="group" aria-labelledby="gl-size-label" id="gl-sizes">
             <button class="gl-chip" type="button" aria-pressed="false">XS</button>
@@ -510,6 +507,7 @@
           </div>
           <button class="btn-lime btn-wide gl-save" id="tryon-save" type="button">Save this look</button>
           <p class="gl-note"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 10h3l2 3v4h-5z"/></svg>Free shipping over $75 &middot; purchase completes on the original shop</p>
+          <span class="visually-hidden" id="gl-results-status" role="status"></span>
           <div class="gl-results" id="gl-results" role="group" aria-label="Try-on search results"></div>
           <!-- ONLY the search bar pins to the panel's bottom; everything else scrolls -->
           <div class="gl-dock">

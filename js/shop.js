@@ -342,6 +342,13 @@
     registerListings(items.slice(0, 12));
     tryonList = items.slice(0, 12).map((it) => it.id);
     renderTryonProducts();
+    const status = $('#gl-results-status');
+    if (status) status.textContent = tryonList.length
+      ? tryonList.length + ' looks found — first one is on the model'
+      : 'No matches — try another search';
+    // the results live above the pinned search bar — bring them into view
+    const panel = $('.glass-right');
+    if (panel && panel.scrollHeight > panel.clientHeight) panel.scrollTop = panel.scrollHeight;
     if (tryonList.length) {
       state.tryonProduct = tryonList[0];
       renderTryonProducts();
@@ -798,9 +805,7 @@
     const base = { feet: 28, head: 20, legs: 40, torso: 44 }[kind];
     const sizeIdx = { XS: -1, S: 0, M: 1, L: 2, XL: 3 }[state.size] ?? 1;
     const fitNudge = state.fit === 'Relaxed' ? 3 : state.fit === 'Fitted' ? -3 : 0;
-    // a taller athlete makes the same garment read smaller on the body
-    const hNudge = (1 - Math.max(0, HEIGHTS.indexOf(state.height))) * 3;
-    const width = base + sizeIdx * 5 + fitNudge + hNudge;
+    const width = base + sizeIdx * 5 + fitNudge;
     const g = $('#tryon-product');
     g.style.left = spot[0] + '%';
     g.style.top = spot[1] + '%';
@@ -959,13 +964,6 @@
     stageModel.alt = `Athlete ${state.athlete} stand-in model, full body`;
     syncAthletes();
     // glass panel controls mirror the state
-    const hIdx = Math.max(0, HEIGHTS.indexOf(state.height));
-    const hs = $('#gl-height');
-    if (hs) {
-      hs.value = hIdx;
-      const [ft, cm] = HEIGHTS[hIdx].split(' (');
-      $('#gl-height-big').innerHTML = esc(ft) + '<small id="gl-height-cm">' + esc(cm.replace(')', '')) + '</small>';
-    }
     $$('#gl-sizes .gl-chip').forEach((c) => {
       const on = c.textContent.trim() === state.size;
       c.classList.toggle('on', on);
@@ -1066,13 +1064,6 @@
   });
   $('#see-btn').addEventListener('click', () => show('tryon'));
   /* glass panel controls */
-  const glHeight = $('#gl-height');
-  if (glHeight) glHeight.addEventListener('input', (e) => {
-    state.height = HEIGHTS[Number(e.target.value)] || HEIGHTS[2];
-    const sel = $('#sel-height');
-    if (sel) sel.firstChild.textContent = state.height; // keep the home rail in step
-    updateTryon(false); // show the overlay so the change is visible
-  });
   $$('#gl-sizes .gl-chip').forEach((c) => c.addEventListener('click', () => {
     state.size = c.textContent.trim();
     const sel = $('#sel-size');
@@ -1103,12 +1094,11 @@
   $('#ath-prev') && $('#ath-prev').addEventListener('click', () => athStep(-1));
   $('#ath-next') && $('#ath-next').addEventListener('click', () => athStep(1));
   $('#gl-reset') && $('#gl-reset').addEventListener('click', () => {
-    state.athlete = 2; state.size = 'M'; state.fit = 'Relaxed'; state.height = HEIGHTS[2];
+    state.athlete = 2; state.size = 'M'; state.fit = 'Relaxed';
     tryonList = null; ++tryonSeq;
     vtonDismissed.clear(); // reset also un-dismisses tapped-away AI looks
     triedHistory = [];
     $('#gl-search-input').value = '';
-    const sh = $('#sel-height'); if (sh) sh.firstChild.textContent = state.height;
     const ss = $('#sel-size'); if (ss) ss.firstChild.textContent = state.size;
     $$('#gl-sports .gl-tile').forEach((x) => { x.classList.remove('on'); x.setAttribute('aria-pressed', 'false'); });
     state.tryonProduct = PICK_IDS[0];

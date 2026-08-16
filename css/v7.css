@@ -436,7 +436,8 @@ button.d-link:hover { text-decoration: underline; }
 .stage-photo > #tryon-athlete {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
-  object-fit: cover; object-position: center 8%;
+  /* contain, never crop — the full body is always in frame, matching the AI look */
+  object-fit: contain; background: #0a0f14;
   opacity: 1; filter: none;
 }
 /* labels and notes sit on glass — lighten the muted tone inside panels for AA */
@@ -587,7 +588,7 @@ body.tryon-mode .topbar { display: none; }
 .gl-dock {
   position: sticky; bottom: -22px;
   margin: 14px -22px -22px;
-  padding: 10px 22px 18px;
+  padding: 10px 22px 22px; /* must match the -22px stick or the pill's bottom clips */
   background: rgba(17, 22, 26, 0.97);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
