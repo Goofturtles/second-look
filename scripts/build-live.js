@@ -38,20 +38,39 @@ const TOPICS = [
     process.exit(0); // an upstream outage must not wipe the deployed data
   }
   // a bad run must not quietly shrink the public pool by half or more
-  let prevTotal = 0;
-  try { prevTotal = (JSON.parse(fs.readFileSync(out, 'utf8')).stats || {}).total || 0; } catch (e) { /* first run */ }
-  if (prevTotal && items.length < prevTotal / 2) {
-    console.error('degraded fetch (' + items.length + ' vs previous ' + prevTotal + ') — keeping the previous data file');
+  let prevTotal = 0, prevFetchedAt = 0;
+  try {
+    const prev = JSON.parse(fs.readFileSync(out, 'utf8'));
+    prevTotal = (prev.stats || {}).total || 0;
+    prevFetchedAt = Date.parse(prev.fetchedAt) || 0;
+  } catch (e) { /* first run, or the retained file is unreadable */ }
+
+  // rejecting keeps the previous file. Nobody watches this job, so say so loudly
+  // enough that a wedged pipeline is visible in the Action log, and fail outright
+  // once the data we are choosing to keep has gone stale.
+  const keepPrevious = (why) => {
+    console.error('::warning::' + why + ' — keeping the previous data file');
+    const ageH = prevFetchedAt ? (Date.now() - prevFetchedAt) / 36e5 : Infinity;
+    if (ageH > 48) {
+      console.error('::error::retained data is ' + (ageH === Infinity ? 'of unknown age' : Math.round(ageH) + 'h old') +
+        ' — the feed has been failing for too long to keep passing silently');
+      process.exit(1); // a failed step skips the commit, so this still cannot publish bad data
+    }
     process.exit(0);
+  };
+
+  if (prevTotal && items.length < prevTotal / 2) {
+    keepPrevious('degraded fetch (' + items.length + ' vs previous ' + prevTotal + ')');
   }
   // the demo film and thumbnail both claim "1,000+ real listings", so the pool is
   // never allowed to commit below that. Halving alone is too loose to protect it:
   // losing SidelineSwap outright leaves ~929, which clears prevTotal/2 and would
-  // publish a total that makes the claim false.
+  // publish a total that makes the claim false. Unlike the halving check this one
+  // needs no baseline — gating it on prevTotal would switch the floor off in exactly
+  // the case it matters most, a missing or corrupt retained file.
   const CLAIMED_FLOOR = 1000;
-  if (prevTotal && items.length < CLAIMED_FLOOR) {
-    console.error('fetch of ' + items.length + ' is below the claimed floor of ' + CLAIMED_FLOOR + ' — keeping the previous data file');
-    process.exit(0);
+  if (items.length < CLAIMED_FLOOR && !process.env.ALLOW_BELOW_FLOOR) {
+    keepPrevious('fetch of ' + items.length + ' is below the claimed floor of ' + CLAIMED_FLOOR);
   }
   const prices = items.map((i) => i.price).sort((a, b) => a - b);
   const perStore = {};
@@ -64,7 +83,13 @@ const TOPICS = [
     avg: Math.round(prices.reduce((s, p) => s + p, 0) / prices.length) || 0,
     perStore,
   };
-  fs.writeFileSync(out, JSON.stringify({ fetchedAt: new Date().toISOString(), queries, stats, items }));
+  // write-then-rename: writeFileSync truncates on open, so a run killed mid-write
+  // would leave a half-written file that the next run cannot parse — which is the
+  // one state that turns the guards above off
+  const tmp = out + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify({ fetchedAt: new Date().toISOString(), queries, stats, items }));
+  JSON.parse(fs.readFileSync(tmp, 'utf8')); // never publish something we can't read back
+  fs.renameSync(tmp, out);
   console.log('wrote data/live.json: ' + stats.total + ' listings (' +
     Object.entries(perStore).map(([k, v]) => k + ' ' + v).join(', ') + ')');
 })().catch((e) => {
