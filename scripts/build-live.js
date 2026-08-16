@@ -44,6 +44,15 @@ const TOPICS = [
     console.error('degraded fetch (' + items.length + ' vs previous ' + prevTotal + ') — keeping the previous data file');
     process.exit(0);
   }
+  // the demo film and thumbnail both claim "1,000+ real listings", so the pool is
+  // never allowed to commit below that. Halving alone is too loose to protect it:
+  // losing SidelineSwap outright leaves ~929, which clears prevTotal/2 and would
+  // publish a total that makes the claim false.
+  const CLAIMED_FLOOR = 1000;
+  if (prevTotal && items.length < CLAIMED_FLOOR) {
+    console.error('fetch of ' + items.length + ' is below the claimed floor of ' + CLAIMED_FLOOR + ' — keeping the previous data file');
+    process.exit(0);
+  }
   const prices = items.map((i) => i.price).sort((a, b) => a - b);
   const perStore = {};
   for (const i of items) perStore[i.store] = (perStore[i.store] || 0) + 1;
