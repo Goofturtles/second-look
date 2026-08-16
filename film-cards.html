@@ -37,8 +37,9 @@
   h1 { font-weight: 900; letter-spacing: -0.04em; line-height: 0.94; }
   h1.big { font-size: 175px; text-transform: uppercase; letter-spacing: -0.045em; }
   h1.mid { font-size: 128px; }
-  h1 .ln { display: block; overflow: hidden; }
-  h1 .ln > span { display: block; transform: translateY(106%); animation: lift 1.05s cubic-bezier(.16,1,.3,1) both; }
+  /* the reveal mask must not shear descenders (j, y, g) — give them room inside it */
+  h1 .ln { display: block; overflow: hidden; padding-bottom: .16em; margin-bottom: -.16em; }
+  h1 .ln > span { display: block; transform: translateY(112%); animation: lift 1.05s cubic-bezier(.16,1,.3,1) both; }
   h1 .ln:nth-child(1) > span { animation-delay: .26s; }
   h1 .ln:nth-child(2) > span { animation-delay: .38s; }
   h1 .ln:nth-child(3) > span { animation-delay: .50s; }
@@ -56,8 +57,8 @@
   /* ---------- brand cards ---------- */
   .mark { text-align: center; width: 100%; }
   .wm { font-size: 158px; font-weight: 900; letter-spacing: 0.015em; line-height: 0.9; display: inline-block; }
-  .wm span { display: block; overflow: hidden; }
-  .wm span > i { font-style: normal; display: block; transform: translateY(106%); animation: lift 1.1s cubic-bezier(.16,1,.3,1) both; }
+  .wm span { display: block; overflow: hidden; padding-bottom: .14em; margin-bottom: -.14em; }
+  .wm span > i { font-style: normal; display: block; transform: translateY(112%); animation: lift 1.1s cubic-bezier(.16,1,.3,1) both; }
   .wm span:nth-child(1) > i { animation-delay: .2s; }
   .wm span:nth-child(2) > i { animation-delay: .33s; }
   .swoosh { display: inline-block; width: 96px; height: 31px; margin-left: 20px; vertical-align: 13px;
@@ -75,7 +76,7 @@
   .stat { text-align: center; opacity: 0; animation: rise .9s cubic-bezier(.16,1,.3,1) both; }
   .stat:nth-child(1) { animation-delay: .25s; } .stat:nth-child(2) { animation-delay: .42s; }
   .stat:nth-child(3) { animation-delay: .59s; } .stat:nth-child(4) { animation-delay: .76s; }
-  .stat b { display: block; font-size: 112px; font-weight: 900; letter-spacing: -0.035em; color: var(--lime); }
+  .stat b { display: block; font-size: 112px; font-weight: 900; letter-spacing: -0.035em; color: var(--lime); line-height: 1.12; }
   .stat span { display: block; margin-top: 14px; font-size: 21px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-2); }
 
   /* ---------- lower thirds (transparent, composited over UI footage) ---------- */
