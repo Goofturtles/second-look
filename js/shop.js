@@ -346,14 +346,14 @@
     if (status) status.textContent = tryonList.length
       ? tryonList.length + ' looks found — first one is on the model'
       : 'No matches — try another search';
-    // the results live above the pinned search bar — bring them into view
-    const panel = $('.glass-right');
-    if (panel && panel.scrollHeight > panel.clientHeight) panel.scrollTop = panel.scrollHeight;
     if (tryonList.length) {
       state.tryonProduct = tryonList[0];
       renderTryonProducts();
       updateTryon();
     }
+    // pin AFTER the card above re-renders, so the results settle flush at the bottom
+    const panel = $('.glass-right');
+    if (panel && panel.scrollHeight > panel.clientHeight) panel.scrollTop = panel.scrollHeight;
   }
   function renderLooks() {
     // full-resolution photography — the board crops upscale badly at this size
@@ -644,7 +644,7 @@
     $('#sel-sort').firstChild.textContent = v;
     renderResults();
   }));
-  $('#sel-height').addEventListener('click', () => openMenu($('#sel-height'), ["5'6\" (168 cm)", "5'9\" (175 cm)", "6'0\" (183 cm)", "6'3\" (191 cm)"], state.height, (v) => {
+  $('#sel-height') && $('#sel-height').addEventListener('click', () => openMenu($('#sel-height'), ["5'6\" (168 cm)", "5'9\" (175 cm)", "6'0\" (183 cm)", "6'3\" (191 cm)"], state.height, (v) => {
     state.height = v;
     $('#sel-height').firstChild.textContent = v;
     updateTryon();
@@ -931,7 +931,6 @@
     gen.hidden = true;
     if (gen.dataset.key) vtonDismissed.add(gen.dataset.key);
   });
-  const HEIGHTS = ["5'6\" (168 cm)", "5'9\" (175 cm)", "6'0\" (183 cm)", "6'3\" (191 cm)"];
   // the user's own model shoot: Guy 1-3, Girl 1-3 — one full-body photo per athlete
   const MODEL_PHOTOS = ['img/model1.jpg', 'img/model2.jpg', 'img/model3.jpg', 'img/model4.jpg', 'img/model5.jpg', 'img/model6.jpg'];
   const COLOR_WORDS = { green: '#1d5c3e', black: '#15181c', white: '#e8e8e4', red: '#b8302f', blue: '#2f5db8', navy: '#1d2f52', grey: '#7a8288', gray: '#7a8288', yellow: '#d8c22f', pink: '#c96f9a', purple: '#6a4a9c', orange: '#c9722f', brown: '#6d4c33', teal: '#2f8a80', burgundy: '#6b2231' };
