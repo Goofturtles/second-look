@@ -334,8 +334,14 @@ const server = http.createServer(async (req, res) => {
         let host = ''; try { host = new URL(g).hostname; } catch (e) {}
         if (!VTON_HOSTS.includes(host)) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end('{"error":"unsupported image host"}'); }
       } else {
+        // same rules as the static branch: no traversal, no dotfiles — a repo file
+        // must never be readable here and shipped off to the try-on service
         const local = path.join(ROOT, g);
-        if (!local.startsWith(ROOT) || g.includes('..') || !fs.existsSync(local)) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end('{"error":"bad garment"}'); }
+        if (!local.startsWith(ROOT + path.sep) || g.includes('..') || g.includes('\0') ||
+            /(^|[\\/])\./.test(g) || !fs.existsSync(local) || !/\.(jpe?g|png|webp)$/i.test(g)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end('{"error":"bad garment"}');
+        }
       }
       if (vtonBusy) { res.writeHead(503, { 'Content-Type': 'application/json', 'Retry-After': '10' }); return res.end('{"error":"busy"}'); }
       if (rateLimited(req.socket.remoteAddress || '')) { res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '30' }); return res.end('{"error":"slow down"}'); }
@@ -367,7 +373,7 @@ const server = http.createServer(async (req, res) => {
     if (p === '/') p = '/index.html';
     const file = path.join(ROOT, p);
     // no traversal, no NULs, and no dotfiles — /.git/config must never be servable
-    if (!file.startsWith(ROOT) || p.includes('..') || p.includes('\0') || /(^|[\\/])\./.test(p)) { res.writeHead(403); return res.end(); }
+    if (!file.startsWith(ROOT + path.sep) || p.includes('..') || p.includes('\0') || /(^|[\\/])\./.test(p)) { res.writeHead(403); return res.end(); }
     fs.stat(file, (serr, st) => {
       if (serr || !st.isFile()) { res.writeHead(404); return res.end('not found'); }
       const lastMod = st.mtime.toUTCString();
