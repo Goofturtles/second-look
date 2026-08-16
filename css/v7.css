@@ -489,8 +489,18 @@ body.tryon-mode .topbar { display: none; }
 .gt-user svg { width: 16px; height: 16px; }
 .gt-user:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 
-/* athlete row with pager arrows */
+/* athlete row with pager arrows — six chips scroll within the strip */
 .gl-ath-row { display: flex; align-items: center; gap: 8px; }
+.gl-ath-row .gl-avatars {
+  flex: 1; min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+  padding: 4px 2px;
+}
+.gl-ath-row .gl-avatars::-webkit-scrollbar { display: none; }
+.gl-ath-row .gl-av { flex: none; width: 46px; height: 46px; }
+@media (prefers-reduced-motion: reduce) { .gl-ath-row .gl-avatars { scroll-behavior: auto; } }
 .gl-arrow {
   flex: none; width: 28px; height: 28px;
   display: inline-flex; align-items: center; justify-content: center;

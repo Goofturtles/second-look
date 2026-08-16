@@ -657,6 +657,11 @@
       x.classList.toggle('selected', on);
       x.classList.toggle('on', on);
       x.setAttribute('aria-pressed', String(on));
+      // the glass strip scrolls — keep the chosen athlete's chip in view
+      if (on && x.parentElement.classList.contains('gl-avatars')) {
+        const p = x.parentElement;
+        p.scrollLeft = x.offsetLeft - p.clientWidth / 2 + x.offsetWidth / 2;
+      }
     });
   }
   $$('.athlete').forEach((a) => a.addEventListener('click', () => {

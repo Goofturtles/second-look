@@ -413,20 +413,22 @@ if (require.main === module) {
       (p) => console.log('prewarmed "nike windrunner": ' + p.stats.total + ' listings'),
       (e) => console.log('prewarm failed: ' + (e && e.message)),
     );
-    // prewarm the default try-on look so the first demo click is instant.
-    // The default product is the first featured snapshot item (r2) — the key
-    // must match what the client will actually request.
+    // prewarm the default garment on ALL SIX models (default athlete first) so
+    // switching people in the demo always shows a finished AI look instantly.
     (async () => {
       const garment = 'img/listings/r2.jpg';
-      try {
-        vtonBusy = true;
-        const out = await vtonGenerate(fs.readFileSync(path.join(ROOT, 'img/model2.jpg')), fs.readFileSync(path.join(ROOT, garment)));
-        vtonCache.set('img/model2.jpg|' + garment, out);
-        console.log('prewarmed default try-on look (' + out.length + 'b)');
-      } catch (e) {
-        console.log('try-on prewarm skipped: ' + (e && e.message));
-      } finally {
-        vtonBusy = false;
+      const garmentBuf = fs.readFileSync(path.join(ROOT, garment));
+      for (const person of ['img/model2.jpg', 'img/model1.jpg', 'img/model3.jpg', 'img/model4.jpg', 'img/model5.jpg', 'img/model6.jpg']) {
+        try {
+          vtonBusy = true;
+          const out = await vtonGenerate(fs.readFileSync(path.join(ROOT, person)), garmentBuf);
+          vtonCache.set(person + '|' + garment, out);
+          console.log('prewarmed try-on look for ' + person + ' (' + out.length + 'b)');
+        } catch (e) {
+          console.log('prewarm skipped for ' + person + ': ' + (e && e.message));
+        } finally {
+          vtonBusy = false;
+        }
       }
     })();
   });
