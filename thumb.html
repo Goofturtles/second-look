@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex">
+<title>SECOND LOOK — video thumbnail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root { --lime: #D3EA2C; --ink: #040D16; --text: #F2F5F7; --text-2: #9AA4AE; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; }
+  body { background: var(--ink); color: var(--text); font-family: Inter, system-ui, sans-serif; position: relative; }
+
+  /* the athlete wearing the exact jacket, full-bleed right */
+  .shot { position: absolute; inset: 0 0 0 38%; }
+  .shot img { width: 100%; height: 100%; object-fit: cover; object-position: 42% 28%; }
+  /* wash the left edge into the ink so the type has clean ground */
+  .shot::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, var(--ink) 0%, rgba(4,13,22,.92) 22%, rgba(4,13,22,.35) 52%, rgba(4,13,22,.55) 100%);
+  }
+  .grade { position: absolute; inset: 0; background:
+      radial-gradient(60% 55% at 18% 42%, rgba(211,234,44,.10), transparent 62%),
+      radial-gradient(50% 45% at 88% 78%, rgba(60,120,180,.12), transparent 64%); }
+
+  /* one flow column, so the before/after row can never land on top of the subtitle */
+  .copy { position: absolute; left: 104px; top: 50%; transform: translateY(-50%); width: 900px;
+    display: flex; flex-direction: column; align-items: flex-start; }
+  .kick {
+    font-size: 21px; font-weight: 700; letter-spacing: .3em; text-transform: uppercase;
+    color: var(--lime); line-height: 1.4; margin-bottom: 26px;
+  }
+  h1 { font-size: 150px; font-weight: 900; letter-spacing: -.045em; line-height: 1.02; text-transform: uppercase; }
+  h1 em { font-style: normal; color: var(--lime); }
+  .rule { height: 5px; width: 190px; background: var(--lime); margin: 34px 0 30px; }
+  p.sub { font-size: 33px; font-weight: 600; color: var(--text-2); line-height: 1.4; }
+  p.sub b { color: var(--text); font-weight: 800; }
+
+  /* the same jacket as a flat listing photo — the "before" half of the promise */
+  .beforerow { display: flex; align-items: center; gap: 30px; margin-top: 44px; }
+  .before {
+    width: 268px; border-radius: 18px; overflow: hidden; border: 2px solid rgba(242,245,247,.16);
+    box-shadow: 0 26px 60px rgba(0,0,0,.6); background: #0b1622;
+  }
+  .before img { display: block; width: 100%; height: 152px; object-fit: cover; }
+  .before span {
+    display: block; padding: 11px 16px 13px; font-size: 16px; font-weight: 700;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--text-2); line-height: 1.3;
+  }
+  .arrow {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 19px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; color: var(--lime); line-height: 1.4;
+  }
+  .arrow i { display: block; width: 74px; height: 4px; background: var(--lime); position: relative; font-style: normal; }
+  .arrow i::after {
+    content: ''; position: absolute; right: -2px; top: -7px;
+    border-left: 16px solid var(--lime); border-top: 9px solid transparent; border-bottom: 9px solid transparent;
+  }
+
+  .wm {
+    position: absolute; right: 76px; top: 60px; text-align: right;
+    font-size: 40px; font-weight: 900; letter-spacing: .02em; line-height: 1.12;
+  }
+  .wm em { font-style: normal; display: inline-block; width: 46px; height: 15px; margin-left: 12px;
+    clip-path: polygon(6% 22%, 100% 22%, 78% 82%, 0% 82%); background: var(--lime); vertical-align: 6px; }
+  .wm small { display: block; font-size: 17px; font-weight: 600; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--text-2); margin-top: 12px; line-height: 1.4; }
+
+  .free {
+    position: absolute; right: 76px; bottom: 92px;
+    background: var(--lime); color: var(--ink); border-radius: 999px;
+    padding: 18px 38px; font-size: 27px; font-weight: 800; letter-spacing: -.01em; line-height: 1.3;
+  }
+</style>
+</head>
+<body>
+  <div class="shot"><img src="img/hero-athlete.jpg" alt=""></div>
+  <div class="grade"></div>
+
+  <div class="copy">
+    <p class="kick">Secondhand sports gear</p>
+    <h1>See it<br>on <em>you.</em></h1>
+    <div class="rule"></div>
+    <p class="sub">AI puts the real listing on a real model.<br><b>Free — no uploads, no account.</b></p>
+
+    <div class="beforerow">
+      <div class="before">
+        <img src="img/big-reebok.jpg" alt="">
+        <span>The listing</span>
+      </div>
+      <div class="arrow"><i></i>Worn</div>
+    </div>
+  </div>
+
+  <div class="wm">SECOND LOOK<em></em><small>Give gear a second game</small></div>
+  <div class="free">1,000+ real listings · 3 shops</div>
+</body>
+</html>
