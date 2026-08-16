@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SECOND LOOK — film cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root { --lime: #D3EA2C; --ink: #040D16; --text: #F2F5F7; --text-2: #97A1AB; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; }
+  body {
+    background: var(--ink);
+    color: var(--text);
+    font-family: Inter, system-ui, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    /* a slow breathing push keeps a static card alive on screen */
+    animation: drift 6s linear both;
+  }
+  @keyframes drift { from { transform: scale(1); } to { transform: scale(1.035); } }
+  /* ambient court glow, brand-side lime */
+  body::before {
+    content: ''; position: fixed; inset: -20%;
+    background: radial-gradient(60% 50% at 22% 42%, rgba(211,234,44,0.10), transparent 60%),
+                radial-gradient(50% 45% at 80% 70%, rgba(60,120,180,0.10), transparent 62%);
+    filter: blur(30px);
+  }
+  .card { position: relative; text-align: left; padding: 0 160px; width: 100%; }
+  .kicker {
+    font-size: 20px; font-weight: 700; letter-spacing: 0.34em; text-transform: uppercase;
+    color: var(--lime); margin-bottom: 34px;
+    opacity: 0; animation: rise 0.9s cubic-bezier(.16,1,.3,1) 0.15s both;
+  }
+  h1 {
+    font-size: 132px; font-weight: 800; line-height: 0.98; letter-spacing: -0.035em;
+    max-width: 1450px;
+  }
+  h1 .ln { display: block; overflow: hidden; }
+  h1 .ln > span { display: block; transform: translateY(105%); animation: lift 1.05s cubic-bezier(.16,1,.3,1) both; }
+  h1 .ln:nth-child(1) > span { animation-delay: 0.30s; }
+  h1 .ln:nth-child(2) > span { animation-delay: 0.42s; }
+  h1 em { font-style: normal; color: var(--lime); }
+  .rule {
+    height: 3px; width: 220px; background: var(--lime); margin: 44px 0 34px;
+    transform-origin: left; transform: scaleX(0);
+    animation: swipe 0.9s cubic-bezier(.16,1,.3,1) 0.75s both;
+  }
+  p.sub {
+    font-size: 34px; font-weight: 500; color: var(--text-2); line-height: 1.45; max-width: 1150px;
+    opacity: 0; animation: rise 1s cubic-bezier(.16,1,.3,1) 0.95s both;
+  }
+  @keyframes lift { to { transform: translateY(0); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+  @keyframes swipe { to { transform: scaleX(1); } }
+
+  /* ---- wordmark cards ---- */
+  .mark { text-align: center; width: 100%; }
+  .mark .wm {
+    font-size: 150px; font-weight: 900; letter-spacing: 0.02em; line-height: 0.92;
+    display: inline-block; position: relative;
+  }
+  .mark .wm span { display: block; overflow: hidden; }
+  .mark .wm span > i {
+    font-style: normal; display: block; transform: translateY(105%);
+    animation: lift 1.1s cubic-bezier(.16,1,.3,1) both;
+  }
+  .mark .wm span:nth-child(1) > i { animation-delay: 0.2s; }
+  .mark .wm span:nth-child(2) > i { animation-delay: 0.33s; }
+  .swoosh {
+    display: inline-block; width: 92px; height: 30px; margin-left: 18px; vertical-align: 12px;
+    clip-path: polygon(6% 22%, 100% 22%, 78% 82%, 0% 82%);
+    background: var(--lime);
+    transform: scaleX(0); transform-origin: left;
+    animation: swipe 0.8s cubic-bezier(.16,1,.3,1) 0.75s both;
+  }
+  .mark p {
+    font-size: 40px; font-weight: 500; color: var(--text-2); margin-top: 40px;
+    opacity: 0; animation: rise 1s cubic-bezier(.16,1,.3,1) 1.0s both;
+  }
+  .mark p b { color: var(--text); font-weight: 700; }
+  .url {
+    display: inline-block; margin-top: 54px; font-size: 30px; font-weight: 700; letter-spacing: 0.02em;
+    color: var(--ink); background: var(--lime); padding: 20px 44px; border-radius: 999px;
+    opacity: 0; animation: rise 0.9s cubic-bezier(.16,1,.3,1) 1.35s both;
+  }
+
+  /* ---- stats card ---- */
+  .stats { display: flex; gap: 110px; justify-content: center; width: 100%; }
+  .stat { text-align: center; opacity: 0; animation: rise 0.9s cubic-bezier(.16,1,.3,1) both; }
+  .stat:nth-child(1) { animation-delay: 0.25s; }
+  .stat:nth-child(2) { animation-delay: 0.45s; }
+  .stat:nth-child(3) { animation-delay: 0.65s; }
+  .stat:nth-child(4) { animation-delay: 0.85s; }
+  .stat b { display: block; font-size: 108px; font-weight: 800; letter-spacing: -0.03em; color: var(--lime); }
+  .stat span { display: block; margin-top: 14px; font-size: 22px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-2); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const CARDS = {
+  open: `<div class="mark">
+      <div class="wm"><span><i>SECOND</i></span><span><i>LOOK<em class="swoosh"></em></i></span></div>
+      <p>Give gear <b>a second game.</b></p>
+    </div>`,
+  real: `<div class="card">
+      <p class="kicker">Every listing is real</p>
+      <h1><span class="ln"><span>Not a mockup.</span></span><span class="ln"><span>A <em>real</em> marketplace.</span></span></h1>
+      <div class="rule"></div>
+      <p class="sub">Live gear pulled from Poshmark, SidelineSwap and GearTrade — real prices, real sellers, real links.</p>
+    </div>`,
+  tryon: `<div class="card">
+      <p class="kicker">The part nobody else has</p>
+      <h1><span class="ln"><span>See it</span></span><span class="ln"><span>on <em>you.</em></span></span></h1>
+      <div class="rule"></div>
+      <p class="sub">AI dresses a real model in the exact item you found. Free, on our own server. No uploads. No accounts.</p>
+    </div>`,
+  search: `<div class="card">
+      <p class="kicker">Any item. Any athlete.</p>
+      <h1><span class="ln"><span>Search anything.</span></span><span class="ln"><span><em>Wear</em> it.</span></span></h1>
+      <div class="rule"></div>
+      <p class="sub">Type what you want, pick a look, and watch it land on the model seconds later.</p>
+    </div>`,
+  stats: `<div class="stats">
+      <div class="stat"><b data-count="1289">0</b><span>Real listings</span></div>
+      <div class="stat"><b data-count="3">0</b><span>Live shops</span></div>
+      <div class="stat"><b data-count="6">0</b><span>Models</span></div>
+      <div class="stat"><b>$0</b><span>To try it on</span></div>
+    </div>`,
+  end: `<div class="mark">
+      <div class="wm"><span><i>SECOND</i></span><span><i>LOOK<em class="swoosh"></em></i></span></div>
+      <p>Give gear <b>a second game.</b></p>
+      <span class="url">2.24.223.99:3488</span>
+    </div>`,
+};
+const key = new URLSearchParams(location.search).get('card') || 'open';
+document.getElementById('root').innerHTML = CARDS[key] || CARDS.open;
+// count-up for the stats card
+document.querySelectorAll('[data-count]').forEach((el) => {
+  const target = Number(el.dataset.count), t0 = performance.now() + 300, dur = 1500;
+  (function tick(now) {
+    const t = Math.max(0, Math.min(1, (now - t0) / dur));
+    const e = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(target * e).toLocaleString();
+    if (t < 1) requestAnimationFrame(tick);
+  })(performance.now());
+});
+</script>
+</body>
+</html>
