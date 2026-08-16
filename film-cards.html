@@ -127,7 +127,7 @@ const CARDS = {
       <h1 class="big"><span class="ln"><span>Search</span></span><span class="ln"><span>anything.</span></span><span class="ln"><span><em>Wear</em> it.</span></span></h1>
     </div>`,
   stats: `<div class="stats">
-      <div class="stat"><b data-count="1289">0</b><span>Real listings</span></div>
+      <div class="stat"><b data-count="1000" data-suffix="+">0</b><span>Real listings</span></div>
       <div class="stat"><b data-count="3">0</b><span>Live shops</span></div>
       <div class="stat"><b data-count="6">0</b><span>Athletes</span></div>
       <div class="stat"><b>$0</b><span>To try it on</span></div>
@@ -139,7 +139,7 @@ const CARDS = {
     </div>`,
 };
 const LOWERS = {
-  live: ['Live right now', '1,289 real listings · 3 shops'],
+  live: ['Live right now', '1,000+ real listings · 3 shops'],
   seller: ['Straight from the seller', 'Real price · real photos · real link'],
   ai: ['On-device cutout, then AI', 'The look lands in about 30 seconds'],
   free: ['What it costs', 'Free — no uploads, no account'],
@@ -156,10 +156,15 @@ if (lower && LOWERS[lower]) {
   document.getElementById('root').innerHTML = CARDS[q.get('card') || 'open'] || CARDS.open;
 }
 document.querySelectorAll('[data-count]').forEach((el) => {
-  const target = Number(el.dataset.count), t0 = performance.now() + 300, dur = 1500;
+  // the live feed re-bakes 4x a day, so the listing count is stated as a floor
+  // ("1,000+") rather than a number the film would go stale against. The floor sits
+  // well below the live total so a single shop dropping out of a bake can't falsify it.
+  const target = Number(el.dataset.count), suffix = el.dataset.suffix || '';
+  const t0 = performance.now() + 300, dur = 1500;
   (function tick(now) {
     const t = Math.max(0, Math.min(1, (now - t0) / dur));
-    el.textContent = Math.round(target * (1 - Math.pow(1 - t, 3))).toLocaleString();
+    // pin the locale: the grouping separator must match the hardcoded strings above
+    el.textContent = Math.round(target * (1 - Math.pow(1 - t, 3))).toLocaleString('en-US') + (t >= 1 ? suffix : '');
     if (t < 1) requestAnimationFrame(tick);
   })(performance.now());
 });
