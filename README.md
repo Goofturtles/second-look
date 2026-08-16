@@ -1,6 +1,6 @@
 # SECOND LOOK
 
-Give gear a second game. A secondhand sports-gear marketplace that shows **real listings from real shops** — Poshmark and SidelineSwap today, eBay ready behind a token — with honest stats (price range, median, per-store counts) computed from the data.
+Give gear a second game. A secondhand sports-gear marketplace that shows **real listings from real shops** — Poshmark, SidelineSwap and GearTrade today, eBay ready behind a token — with honest stats (price range, median, per-store counts) computed from the data.
 
 Built for PeddieHacks 2026 (Sports + Health tracks).
 
@@ -18,7 +18,7 @@ Built for PeddieHacks 2026 (Sports + Health tracks).
 node server.js
 ```
 
-Then open http://localhost:3488. The zero-dependency server serves the site and `/api/search?q=…`, which fans out to the shops in real time (15-minute cache, prewarmed default query). Set `EBAY_OAUTH_TOKEN` to light up eBay as a third store.
+Then open http://localhost:3488. The zero-dependency server serves the site and `/api/search?q=…`, which fans out to all three shops in real time (15-minute cache, prewarmed default query). Set `EBAY_OAUTH_TOKEN` to light up eBay as a third store.
 
 **Static mode (GitHub Pages):** the site detects there's no server and uses `data/live.json` — refreshed four times a day by the `refresh-live` GitHub Action — labeled with its refresh time. If that's missing too, it falls back to the bundled snapshot in `js/listings.js`, labeled as a snapshot. The room is never empty and never lies about freshness.
 

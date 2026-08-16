@@ -57,7 +57,7 @@
     query: '',
     filters: { Size: 'All', Color: 'All', Condition: 'All', Price: 'All', Category: 'All', Brand: 'All' },
     sort: 'Most relevant',
-    athlete: 2, fit: 'Relaxed', height: "6'0\" (183 cm)", size: 'M',
+    athlete: 2, fit: 'Relaxed', size: 'M',
     tryonProduct: PICK_IDS[0],
     currentProduct: PICK_IDS[0],
     viewed: ['cap', 'backpack', 'acg', 'blazer'],
@@ -643,11 +643,6 @@
     state.sort = v;
     $('#sel-sort').firstChild.textContent = v;
     renderResults();
-  }));
-  $('#sel-height') && $('#sel-height').addEventListener('click', () => openMenu($('#sel-height'), ["5'6\" (168 cm)", "5'9\" (175 cm)", "6'0\" (183 cm)", "6'3\" (191 cm)"], state.height, (v) => {
-    state.height = v;
-    $('#sel-height').firstChild.textContent = v;
-    updateTryon();
   }));
   $('#sel-size').addEventListener('click', () => openMenu($('#sel-size'), ['S', 'M', 'L', 'XL'], state.size, (v) => {
     state.size = v;

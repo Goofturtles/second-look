@@ -2,7 +2,7 @@
    Zero dependencies. Run: node server.js  (port 3488)
 
    GET /api/search?q=...  →  { q, fetchedAt, stats, sources, items[] }
-   Live sources: Poshmark (SSR-embedded JSON), SidelineSwap (public API),
+   Live sources: Poshmark (SSR-embedded JSON), SidelineSwap and GearTrade (public APIs),
    and eBay Browse API when EBAY_OAUTH_TOKEN is set in the environment. */
 
 'use strict';
@@ -366,7 +366,8 @@ const server = http.createServer(async (req, res) => {
     let p = decodeURIComponent(u.pathname);
     if (p === '/') p = '/index.html';
     const file = path.join(ROOT, p);
-    if (!file.startsWith(ROOT) || p.includes('..') || p.includes('\0')) { res.writeHead(403); return res.end(); }
+    // no traversal, no NULs, and no dotfiles — /.git/config must never be servable
+    if (!file.startsWith(ROOT) || p.includes('..') || p.includes('\0') || /(^|[\\/])\./.test(p)) { res.writeHead(403); return res.end(); }
     fs.stat(file, (serr, st) => {
       if (serr || !st.isFile()) { res.writeHead(404); return res.end('not found'); }
       const lastMod = st.mtime.toUTCString();
