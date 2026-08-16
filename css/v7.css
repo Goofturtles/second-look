@@ -583,16 +583,17 @@ body.tryon-mode .topbar { display: none; }
 .gl-share svg { width: 19px; height: 19px; }
 .gl-share:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 
-/* the search dock rides the bottom edge of the scrolling right panel */
+/* only the search bar rides the bottom edge of the scrolling right panel */
 .gl-dock {
   position: sticky; bottom: -22px;
-  margin: 16px -22px -22px;
-  padding: 4px 22px 22px;
+  margin: 14px -22px -22px;
+  padding: 10px 22px 18px;
   background: rgba(17, 22, 26, 0.97);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--line);
 }
+.gl-results { margin-top: 12px; }
 
 /* compare modal */
 .compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }

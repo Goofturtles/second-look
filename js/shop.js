@@ -660,7 +660,9 @@
       // the glass strip scrolls — keep the chosen athlete's chip in view
       if (on && x.parentElement.classList.contains('gl-avatars')) {
         const p = x.parentElement;
-        p.scrollLeft = x.offsetLeft - p.clientWidth / 2 + x.offsetWidth / 2;
+        // offsetLeft is measured from the positioned panel, not the strip —
+        // subtract the strip's own offset or the centering biases rightward
+        p.scrollLeft = x.offsetLeft - p.offsetLeft - p.clientWidth / 2 + x.offsetWidth / 2;
       }
     });
   }
